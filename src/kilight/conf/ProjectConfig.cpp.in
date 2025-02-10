@@ -1,0 +1,27 @@
+/**
+ * ProjectConfig.cpp.in
+ *
+ * @author Patrick Lavigne
+ */
+#include "kilight/conf/ProjectConfig.h"
+
+namespace kilight::conf {
+
+    project_config_data_t const & getProjectConfig() {
+        constexpr static  project_config_data_t const instance = {
+                .ProjectName = "@PROJECT_NAME@",
+                .VersionString = "@PROJECT_VERSION@",
+                .VersionMajor = @PROJECT_VERSION_MAJOR@,
+                .VersionMinor = @PROJECT_VERSION_MINOR@,
+                .VersionPatch = @PROJECT_VERSION_PATCH@,
+                .DeviceName = "@DEVICE_NAME@",
+                .ManufacturerName = "@MANUFACTURER_NAME@",
+                .HardwareVersionString = "@HARDWARE_VERSION@",
+                .HardwareVersionMajor = @HARDWARE_VERSION_MAJOR@,
+                .HardwareVersionMinor = @HARDWARE_VERSION_MINOR@,
+                .HardwareVersionPatch = @HARDWARE_VERSION_PATCH@
+        };
+
+        return instance;
+    }
+}

@@ -1,0 +1,19 @@
+/**
+ * WifiConfig.cpp.in
+ *
+ * @author Patrick Lavigne
+ */
+#include "kilight/conf/WifiConfig.h"
+
+namespace kilight::conf {
+
+    wifi_config_t const & getWifiConfig() {
+        constexpr static wifi_config_t const instance = {
+                .SSID = "@WIFI_SSID@",
+                .Password = "@WIFI_PASSWORD@",
+                .ListenPort = @SERVER_LISTEN_PORT@
+        };
+
+        return instance;
+    }
+}

@@ -1,0 +1,33 @@
+include(${CMAKE_CURRENT_LIST_DIR}/RunGit.cmake)
+
+runGit(COMMAND rev-parse HEAD
+        OUTPUT_VARIABLE BUILD_GIT_REVISION)
+runGit(COMMAND rev-parse --short=8 HEAD
+        OUTPUT_VARIABLE BUILD_GIT_SHORT_REVISION)
+
+if (DEFINED ENV{BUILD_GIT_BRANCH})
+    set(BUILD_GIT_BRANCH $ENV{BUILD_GIT_BRANCH})
+else()
+    runGit(COMMAND rev-parse --abbrev-ref HEAD
+            OUTPUT_VARIABLE BUILD_GIT_BRANCH)
+endif()
+
+string(TIMESTAMP BUILD_DATE "%Y-%m-%d")
+string(TIMESTAMP BUILD_TIME "%H:%M:%S")
+string(TIMESTAMP BUILD_TIMESTAMP UTC)
+
+if(DEFINED ENV{BUILD_NUMBER})
+    set(BUILD_NUMBER $ENV{BUILD_NUMBER})
+else()
+    set(BUILD_NUMBER "0")
+endif()
+
+set(BUILD_INFO_STRING "Build #${BUILD_NUMBER} built on ${BUILD_DATE} ${BUILD_TIME} from ${BUILD_GIT_BRANCH} (rev ${BUILD_GIT_SHORT_REVISION})")
+
+message(STATUS "${BUILD_INFO_STRING}")
+
+configure_file(
+        ${CONFIG_INPUT_FILE}
+        ${CONFIG_OUTPUT_FILE}
+        @ONLY
+)

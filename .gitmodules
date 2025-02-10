@@ -1,0 +1,4 @@
+[submodule "lib/micro-program-framework"]
+	path = lib/micro-program-framework
+	url = ../micro-program-framework.git
+    update = merge

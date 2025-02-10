@@ -1,0 +1,29 @@
+/**
+ * BuildConfig.cpp.in
+ *
+ * @author Patrick Lavigne
+ */
+#include "kilight/conf/BuildConfig.h"
+
+namespace kilight::conf {
+
+    build_config_data_t const & getBuildConfig() {
+        constexpr static build_config_data_t const instance = {
+                #ifdef __GNUC__
+                .Compiler = "gcc v" __VERSION__,
+                #else
+                .Compiler = __VERSION__,
+                #endif
+                .GitRevision = "@BUILD_GIT_REVISION@",
+                .GitShortRevision = "@BUILD_GIT_SHORT_REVISION@",
+                .GitBranch = "@BUILD_GIT_BRANCH@",
+                .Date = "@BUILD_DATE@",
+                .Time = "@BUILD_TIME@",
+                .Timestamp = "@BUILD_TIMESTAMP@",
+                .Number = @BUILD_NUMBER@,
+                .InfoString = "@BUILD_INFO_STRING@"
+        };
+
+        return instance;
+    }
+}
