@@ -48,7 +48,7 @@ namespace kilight::hw {
     };
 
     class SystemPins final {
-        friend class KiLight;
+        friend class kilight::KiLight;
 
     public:
 

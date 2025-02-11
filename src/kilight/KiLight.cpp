@@ -6,8 +6,10 @@
 
 #include "kilight/KiLight.h"
 
-#include <hardware/watchdog.h>
 #include <pico/stdlib.h>
+#include <hardware/adc.h>
+#include <hardware/i2c.h>
+#include <hardware/watchdog.h>
 
 #include "kilight/conf/BuildConfig.h"
 #include "kilight/conf/ProjectConfig.h"
@@ -29,10 +31,26 @@ namespace kilight {
         SysClock::initialize();
         SystemPins::initPins();
         setup_default_uart();
+        adc_init();
+        i2c_init(i2c_default, KILIGHT_I2C_BAUD_RATE);
+    }
+
+    void KiLight::printStartupHeader() const {
+        auto const & projectConf = conf::getProjectConfig();
+        auto const & buildConf = conf::getBuildConfig();
+
+        INFOCRLF();
+        INFOCRLF();
+        INFOC("\t{} v{}", projectConf.ProjectName, projectConf.VersionString);
+        INFOC("\t{}", buildConf.InfoString);
+        INFOCRLF();
+        INFOF();
     }
 
     void KiLight::setUp() {
-        printStartupHeader();
+        if (watchdog_enable_caused_reboot()) {
+            WARN("Watchdog timeout caused previous reboot!");
+        }
     }
 
     void KiLight::beforeFirstLoop() {
@@ -45,17 +63,5 @@ namespace kilight {
 
     void KiLight::panic(char const * message) {
         ::panic(message);
-    }
-
-    void KiLight::printStartupHeader() {
-        auto const & projectConf = conf::getProjectConfig();
-        auto const & buildConf = conf::getBuildConfig();
-
-        INFOCRLF();
-        INFOCRLF();
-        INFOC("\t{} v{}", projectConf.ProjectName, projectConf.VersionString);
-        INFOC("\t{}", buildConf.InfoString);
-        INFOCRLF();
-        INFOF();
     }
 } // kilight

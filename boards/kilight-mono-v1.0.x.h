@@ -23,6 +23,11 @@
 #define KILIGHT_PAUSE_WDT_ON_DEBUG false
 #endif
 
+// Use 400KHz I2C mode
+#ifndef KILIGHT_I2C_BAUD_RATE
+#define KILIGHT_I2C_BAUD_RATE 400000
+#endif
+
 #define PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE CYW43_COUNTRY_USA
 
 // For board detection

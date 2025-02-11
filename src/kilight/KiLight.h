@@ -31,6 +31,8 @@ namespace kilight {
 
         void initialize() override;
 
+        void printStartupHeader() const override;
+
         void setUp() override;
 
         void beforeFirstLoop() override;
@@ -41,8 +43,6 @@ namespace kilight {
         void panic(char const * message) override;
 
     private:
-        static void printStartupHeader();
-
         core::LogSink const m_logSink;
     };
 
