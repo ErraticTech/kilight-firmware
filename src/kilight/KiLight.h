@@ -8,8 +8,9 @@
 
 #include <atomic>
 
-#include "mpf/core/Program.h"
-#include "mpf/core/Logging.h"
+#include <mpf/core/Program.h>
+#include <mpf/core/Logging.h>
+
 #include "kilight/core/LogSink.h"
 
 namespace kilight {

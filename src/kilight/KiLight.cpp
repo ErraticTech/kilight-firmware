@@ -12,9 +12,11 @@
 #include "kilight/conf/BuildConfig.h"
 #include "kilight/conf/ProjectConfig.h"
 #include "kilight/hw/SysClock.h"
+#include "kilight/hw/SystemPins.h"
 
-using mpf::core::Logger;
+using kilight::core::LogSink;
 using kilight::hw::SysClock;
+using kilight::hw::SystemPins;
 using kilight::core::LogSink;
 
 namespace kilight {
@@ -25,6 +27,7 @@ namespace kilight {
 
     void KiLight::initialize() {
         SysClock::initialize();
+        SystemPins::initPins();
         setup_default_uart();
     }
 

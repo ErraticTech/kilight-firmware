@@ -15,6 +15,12 @@ add_library(kilight-firmware-lib STATIC
         kilight/hw/SysClock.cpp
         kilight/core/LogSink.h
         kilight/core/LogSink.cpp
+        kilight/hw/ADC.h
+        kilight/hw/ADC.cpp
+        kilight/hw/Pin.h
+        kilight/hw/Pin.cpp
+        kilight/hw/SystemPins.h
+        kilight/hw/SystemPins.cpp
 )
 
 target_compile_options(kilight-firmware-lib PRIVATE

@@ -159,5 +159,3 @@
 #ifndef CYW43_DEFAULT_PIN_WL_CS
 #define CYW43_DEFAULT_PIN_WL_CS 25u
 #endif
-
-#endif

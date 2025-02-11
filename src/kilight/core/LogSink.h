@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "mpf/core/LogSink.h"
+#include <mpf/core/LogSink.h>
 
 namespace kilight::core {
 

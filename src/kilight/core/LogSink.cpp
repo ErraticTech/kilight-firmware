@@ -6,7 +6,7 @@
 #include <pico/stdlib.h>
 
 #include "kilight/core/LogSink.h"
-#include "mpf/util/StringUtil.h"
+#include <mpf/util/StringUtil.h>
 
 using std::string_view;
 using mpf::util::StringUtil;
