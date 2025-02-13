@@ -8,7 +8,7 @@
 namespace kilight::conf {
 
     project_config_data_t const & getProjectConfig() {
-        constexpr static  project_config_data_t const instance = {
+        constexpr static project_config_data_t instance = {
                 .ProjectName = "@PROJECT_NAME@",
                 .VersionString = "@PROJECT_VERSION@",
                 .VersionMajor = @PROJECT_VERSION_MAJOR@,

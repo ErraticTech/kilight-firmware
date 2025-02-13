@@ -8,7 +8,7 @@
 namespace kilight::conf {
 
     build_config_data_t const & getBuildConfig() {
-        constexpr static build_config_data_t const instance = {
+        constexpr static build_config_data_t instance = {
                 #ifdef __GNUC__
                 .Compiler = "gcc v" __VERSION__,
                 #else

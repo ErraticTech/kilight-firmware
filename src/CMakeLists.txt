@@ -4,9 +4,7 @@ add_library(kilight-firmware-lib STATIC
         kilight/KiLight.h
         kilight/KiLight.cpp
         kilight/conf/BuildConfig.h
-        kilight/conf/BuildConfig.cpp.in
         kilight/conf/ProjectConfig.h
-        kilight/conf/ProjectConfig.cpp.in
         kilight/conf/WifiConfig.h
         kilight/conf/WifiConfig.cpp.in
         kilight/util/MathUtil.cpp
@@ -21,6 +19,15 @@ add_library(kilight-firmware-lib STATIC
         kilight/hw/Pin.cpp
         kilight/hw/SystemPins.h
         kilight/hw/SystemPins.cpp
+        kilight/com/server_protocol.h
+        kilight/com/server_protocol.cpp
+        kilight/com/WifiSubsystem.h
+        kilight/com/WifiSubsystem.cpp
+        kilight/output/rgbcw_color.h
+        kilight/output/rgbcw_color.cpp
+        kilight/core/Alarm.h
+        kilight/conf/HardwareConfig.h
+        kilight/conf/HardwareConfig.cpp
 )
 
 target_compile_options(kilight-firmware-lib PRIVATE

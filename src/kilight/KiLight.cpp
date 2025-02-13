@@ -11,6 +11,9 @@
 #include <hardware/i2c.h>
 #include <hardware/watchdog.h>
 
+#include <mpf/conf/LibraryConfig.h>
+#include <mpf/conf/BuildConfig.h>
+
 #include "kilight/conf/BuildConfig.h"
 #include "kilight/conf/ProjectConfig.h"
 #include "kilight/hw/SysClock.h"
@@ -23,7 +26,11 @@ using kilight::core::LogSink;
 
 namespace kilight {
 
-    LogSink const * KiLight::logSink() const {
+    KiLight::KiLight() :
+        m_wifiSubsystem(subsystems()) {
+    }
+
+    LogSink const* KiLight::logSink() const {
         return &m_logSink;
     }
 
@@ -36,13 +43,17 @@ namespace kilight {
     }
 
     void KiLight::printStartupHeader() const {
-        auto const & projectConf = conf::getProjectConfig();
-        auto const & buildConf = conf::getBuildConfig();
+        auto const& projectConf = conf::getProjectConfig();
+        auto const& buildConf = conf::getBuildConfig();
+        auto const& libraryConf = mpf::conf::getLibraryConfig();
+        auto const& libraryBuildConf = mpf::conf::getBuildConfig();
 
         INFOCRLF();
         INFOCRLF();
         INFOC("\t{} v{}", projectConf.ProjectName, projectConf.VersionString);
         INFOC("\t{}", buildConf.InfoString);
+        INFOC("\tUsing {} v{}", libraryConf.LibraryName, libraryConf.VersionString);
+        INFOC("\t{}", libraryBuildConf.InfoString);
         INFOCRLF();
         INFOF();
     }
@@ -61,7 +72,7 @@ namespace kilight {
         watchdog_update();
     }
 
-    void KiLight::panic(char const * message) {
+    void KiLight::panic(char const* message) {
         ::panic(message);
     }
 } // kilight

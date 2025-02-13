@@ -12,6 +12,7 @@
 #include <mpf/core/Logging.h>
 
 #include "kilight/core/LogSink.h"
+#include "kilight/com/WifiSubsystem.h"
 
 namespace kilight {
 
@@ -21,7 +22,7 @@ namespace kilight {
         static constexpr uint32_t WatchdogTimeoutMs = 2000;
 
     public:
-        KiLight() = default;
+        KiLight();
 
         ~KiLight() override = default;
 
@@ -44,6 +45,8 @@ namespace kilight {
 
     private:
         core::LogSink const m_logSink;
+
+        com::WifiSubsystem m_wifiSubsystem;
     };
 
 } // namespace kilight
