@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cstring>
 #include <span>
 
 namespace kilight::util {
@@ -19,7 +20,9 @@ namespace kilight::util {
 
         template<typename DataT>
         static uint16_t crc16(DataT const & data) {
-            return crc16(std::span{reinterpret_cast<std::byte const*>(&data), sizeof(DataT)});
+            std::array<std::byte, sizeof(DataT)> buffer;
+            memcpy(buffer.begin(), &data, sizeof(DataT));
+            return crc16(std::span{buffer});
         }
 
         /**

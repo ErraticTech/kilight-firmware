@@ -5,6 +5,8 @@
  */
 #include "kilight/com/WifiSubsystem.h"
 
+#include <cstring>
+
 #include <pico/cyw43_arch.h>
 #include <lwip/netif.h>
 #include <lwip/ip4_addr.h>
@@ -397,7 +399,8 @@ namespace kilight::com {
         }
 
         DEBUG("Processing write request");
-        write_request_t const writeRequest = *reinterpret_cast<write_request_t*>(session.receiveBuffer.begin() + 2);
+        write_request_t writeRequest;
+        memcpy(&writeRequest, session.receiveBuffer.begin() + 2, sizeof(write_request_t));
 
         if (m_writeRequestCallback) {
             m_writeRequestCallback(writeRequest);
