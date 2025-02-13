@@ -28,6 +28,18 @@ add_library(kilight-firmware-lib STATIC
         kilight/core/Alarm.h
         kilight/conf/HardwareConfig.h
         kilight/conf/HardwareConfig.cpp
+        kilight/hw/I2CDevice.h
+        kilight/hw/I2CDevice.cpp
+        kilight/hw/DS2485Driver.h
+        kilight/hw/DS2485Driver.cpp
+        kilight/hw/DS18B20Driver.h
+        kilight/hw/DS18B20Driver.cpp
+        kilight/hw/OneWireDevice.cpp
+        kilight/hw/OneWireDevice.h
+        kilight/hw/OneWireSubsystem.cpp
+        kilight/hw/OneWireSubsystem.h
+        kilight/hw/TemperatureSensor.cpp
+        kilight/hw/TemperatureSensor.h
 )
 
 target_compile_options(kilight-firmware-lib PRIVATE

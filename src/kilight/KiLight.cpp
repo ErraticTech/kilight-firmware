@@ -27,7 +27,8 @@ using kilight::core::LogSink;
 namespace kilight {
 
     KiLight::KiLight() :
-        m_wifiSubsystem(subsystems()) {
+        m_wifiSubsystem(subsystems()),
+        m_oneWireSubsystem(subsystems()) {
     }
 
     LogSink const* KiLight::logSink() const {
