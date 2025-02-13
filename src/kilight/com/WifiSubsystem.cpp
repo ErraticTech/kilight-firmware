@@ -50,7 +50,7 @@ namespace kilight::com {
 
         mdns_resp_add_service(netif_list,
                               m_hostname,
-                              "_lslm",
+                              "_kilight",
                               DNSSD_PROTO_TCP,
                               getWifiConfig().ListenPort,
                               [](mdns_service* const service, void* context) {
