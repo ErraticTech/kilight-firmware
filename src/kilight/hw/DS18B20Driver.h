@@ -101,21 +101,21 @@ namespace kilight::hw {
         template<Command commandToRun>
         struct PACKED match_rom_command_t {
             ROMCommand const matchRomCommand: 8 = ROMCommand::MatchRom;
-            DS2485Driver::onewire_address_t address: 64;
+            onewire_address_t address;
             Command const command: 8 = commandToRun;
 
-            explicit match_rom_command_t(DS2485Driver::onewire_address_t const address)
+            explicit match_rom_command_t(onewire_address_t const address)
                 : address(address) {}
         };
 
         template<Command commandToRun, typename CommandDataT>
         struct PACKED match_rom_command_with_data_t {
             ROMCommand const matchRomCommand: 8 = ROMCommand::MatchRom;
-            DS2485Driver::onewire_address_t address: 64;
+            onewire_address_t address;
             Command const command: 8 = commandToRun;
             CommandDataT commandData;
 
-            match_rom_command_with_data_t(DS2485Driver::onewire_address_t const address,
+            match_rom_command_with_data_t(onewire_address_t const address,
                                           CommandDataT const &commandData)
                 : address(address), commandData(commandData) {}
         };

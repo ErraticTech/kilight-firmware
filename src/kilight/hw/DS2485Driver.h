@@ -12,6 +12,7 @@
 #include <mpf/core/Logging.h>
 
 #include "kilight/hw/I2CDevice.h"
+#include "kilight/hw/onewire_address.h"
 
 namespace kilight::hw {
     class DS2485Driver final : private I2CDevice {
@@ -107,8 +108,6 @@ namespace kilight::hw {
 
         static constexpr uint64_t ReadBlockTimeUs = OperationDelayTimeUs + SequenceTimeUs * (10 + 8) + OneWireTime + ResetTimeUs + 10000;
 
-        using onewire_address_t = uint64_t;
-
         enum class OneWireRWPU : uint8_t {
             External = 0b00,
             FiveHundred = 0b01,
@@ -155,8 +154,8 @@ namespace kilight::hw {
         };
 
         struct PACKED onewire_search_result_t {
-            onewire_address_t address: 64;
-            bool isLastDevice: 1;
+            onewire_address_t address = 0;
+            bool isLastDevice: 1 = false;
             unsigned: 7;
         };
 

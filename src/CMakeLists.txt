@@ -40,6 +40,9 @@ add_library(kilight-firmware-lib STATIC
         kilight/hw/OneWireSubsystem.h
         kilight/hw/TemperatureSensor.cpp
         kilight/hw/TemperatureSensor.h
+        kilight/hw/onewire_address.h
+        kilight/hw/TMP1826Driver.cpp
+        kilight/hw/TMP1826Driver.h
 )
 
 target_compile_options(kilight-firmware-lib PRIVATE
@@ -121,7 +124,7 @@ target_compile_options(kilight-firmware PRIVATE
 )
 
 target_link_options(kilight-firmware PRIVATE
-        -Wl,--print-memory-usage
+        LINKER:--print-memory-usage
 )
 
 pico_add_extra_outputs(kilight-firmware)

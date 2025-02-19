@@ -62,6 +62,30 @@ namespace kilight::hw {
             scanForDevicesCompleteState();
             break;
 
+        case ReadOnboardDeviceScratchpadCommandStart:
+            readOnboardDeviceScratchpadCommandStartState();
+            break;
+
+        case ReadOnboardDeviceScratchpadCommandComplete:
+            readOnboardDeviceScratchpadCommandCompleteState();
+            break;
+
+        case ReadOnboardDeviceScratchpadStart:
+            readOnboardDeviceScratchpadStartState();
+            break;
+
+        case ReadOnboardDeviceScratchpadComplete:
+            readOnboardDeviceScratchpadCompleteState();
+            break;
+
+        case WriteOnboardDeviceConfigStart:
+            writeOnboardDeviceConfigStartState();
+            break;
+
+        case WriteOnboardDeviceConfigComplete:
+            writeOnboardDeviceConfigCompleteState();
+            break;
+
         case RequestTemperatureConversionStart:
             requestTemperatureConversionStartState();
             break;
@@ -219,29 +243,102 @@ namespace kilight::hw {
             wait(ScanForDevicesStart, ErrorRetryDelayUs);
             return;
         }
-        DS2485Driver::onewire_address_t const foundAddress = result.address;
+        onewire_address_t const foundAddress = result.address;
         m_foundDeviceAddresses[m_deviceAddressesFound] = foundAddress;
         ++m_deviceAddressesFound;
 
-        DEBUG("Found OneWire device: {:#018X}", foundAddress);
 
-        if (m_externalDevicesFound < MaxExternalDevicesToFind &&
-            static_cast<uint8_t>(foundAddress & 0xFFU) == DS18B20Driver::DeviceFamilyCode) {
+        if (foundAddress.deviceFamily() == TMP1826Driver::DeviceFamilyCode) {
+            DEBUG("Found on-board OneWire device: {}", foundAddress);
+            m_onboardDevice.setAddress(foundAddress);
+        } else if (m_externalDevicesFound < MaxExternalDevicesToFind &&
+            foundAddress.deviceFamily() == DS18B20Driver::DeviceFamilyCode) {
+            DEBUG("Found external OneWire device: {}", foundAddress);
             m_foundExternalDevices[m_externalDevicesFound].setAddress(foundAddress);
             ++m_externalDevicesFound;
+        } else {
+            WARN("Found unexpected OneWire device: {}", foundAddress);
         }
 
         if (result.isLastDevice || m_deviceAddressesFound >= m_foundDeviceAddresses.size()) {
             DEBUG("Done finding devices");
-            if (m_deviceAddressesFound == 0) {
-                WARN("No temperature sensors found!");
-                m_state = Invalid;
+            if (m_onboardDevice.address()) {
+                m_state = ReadOnboardDeviceScratchpadCommandStart;
                 return;
             }
-            m_state = RequestTemperatureConversionStart;
+            if (m_deviceAddressesFound > 0) {
+                m_state = RequestTemperatureConversionStart;
+                return;
+            }
+            WARN("No temperature sensors found!");
+            m_state = Invalid;
             return;
         }
         m_state = ScanForDevicesStart;
+    }
+
+
+    void OneWireSubsystem::readOnboardDeviceScratchpadCommandStartState() {
+        if (!m_onboardDevice.startReadScratchpadCommand()) {
+            wait(State::ReadOnboardDeviceScratchpadCommandStart, ErrorRetryDelayUs);
+            return;
+        }
+
+        wait(State::ReadOnboardDeviceScratchpadCommandComplete, DS2485Driver::WriteBlockTimeUs);
+    }
+
+    void OneWireSubsystem::readOnboardDeviceScratchpadCommandCompleteState() {
+        if (!m_onboardDevice.completeReadScratchpadCommand()) {
+            wait(State::ReadOnboardDeviceScratchpadCommandStart, ErrorRetryDelayUs);
+            return;
+        }
+        m_state = State::ReadOnboardDeviceScratchpadStart;
+    }
+
+    void OneWireSubsystem::readOnboardDeviceScratchpadStartState() {
+        if (!m_onboardDevice.startReadScratchpad()) {
+            wait(State::ReadOnboardDeviceScratchpadCommandStart, ErrorRetryDelayUs);
+            return;
+        }
+
+        wait(State::ReadOnboardDeviceScratchpadComplete, DS2485Driver::ReadBlockTimeUs);
+    }
+
+    void OneWireSubsystem::readOnboardDeviceScratchpadCompleteState() {
+        using enum State;
+        if (!m_onboardDevice.completeReadScratchpad()) {
+            wait(ReadOnboardDeviceScratchpadCommandStart, ErrorRetryDelayUs);
+            return;
+        }
+
+        if (!m_onboardDevice.configurationIsValid()) {
+            DEBUG("Setting onboard device configuration");
+            m_state = WriteOnboardDeviceConfigStart;
+            return;
+        }
+        if (m_externalDevicesFound > 0) {
+            m_state = RequestTemperatureConversionStart;
+            return;
+        }
+        wait(ReadOnboardDeviceScratchpadCommandStart, OnboardDeviceOnlyReadDelayUs);
+    }
+
+    void OneWireSubsystem::writeOnboardDeviceConfigStartState() {
+        if (!m_onboardDevice.startWriteScratchpadCommand()) {
+            wait(State::ReadOnboardDeviceScratchpadCommandStart, ErrorRetryDelayUs);
+            return;
+        }
+
+        wait(State::WriteOnboardDeviceConfigComplete, DS2485Driver::WriteBlockTimeUs * 10);
+    }
+
+    void OneWireSubsystem::writeOnboardDeviceConfigCompleteState() {
+        if (!m_onboardDevice.completeWriteScratchpadCommand()) {
+            wait(State::ReadOnboardDeviceScratchpadCommandStart, ErrorRetryDelayUs);
+            return;
+        }
+
+        wait(State::ReadOnboardDeviceScratchpadCommandStart, DS2485Driver::ReadBlockTimeUs);
     }
 
     void OneWireSubsystem::requestTemperatureConversionStartState() {
@@ -298,6 +395,6 @@ namespace kilight::hw {
         if (m_currentExternalDevice >= m_externalDevicesFound) {
             m_currentExternalDevice = 0;
         }
-        m_state = RequestTemperatureConversionStart;
+        m_state = ReadOnboardDeviceScratchpadCommandStart;
     }
 }

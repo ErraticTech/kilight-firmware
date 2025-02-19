@@ -17,9 +17,9 @@ namespace kilight::hw {
         virtual ~OneWireDevice() = default;
 
         [[nodiscard]]
-        DS2485Driver::onewire_address_t address() const;
+        onewire_address_t const & address() const;
 
-        void setAddress(DS2485Driver::onewire_address_t address);
+        void setAddress(onewire_address_t const & address);
 
     protected:
         [[nodiscard]]
@@ -28,7 +28,7 @@ namespace kilight::hw {
     private:
         DS2485Driver * const m_driver;
 
-        DS2485Driver::onewire_address_t m_address = 0;
+        onewire_address_t m_address = 0;
     };
 
 }
