@@ -6,9 +6,13 @@
 
 #include "kilight/hw/TMP1826Driver.h"
 
+#include "kilight/util/MathUtil.h"
+
+using kilight::util::MathUtil;
+
 namespace kilight::hw {
-    TMP1826Driver::TMP1826Driver(DS2485Driver* const driver) :
-        OneWireDevice(driver) {
+    TMP1826Driver::TMP1826Driver(DS2485Driver* const busDriver) :
+        OneWireDevice(busDriver) {
     }
 
     int16_t TMP1826Driver::currentTemperature() const {
@@ -42,7 +46,22 @@ namespace kilight::hw {
     bool TMP1826Driver::completeReadScratchpad() {
         bool const result = driver()->completeOneWireReadBlock(&m_scratchpad);
         if (result) {
-            DEBUG("On-Board Temperature: {:.2f} C", static_cast<float>(m_scratchpad.temperature) / 128);
+            static_assert(sizeof(scratchpad_t) >= 18, "scratchpad_t is the wrong size");
+            std::array<std::byte, sizeof(scratchpad_t)> buff {};
+            memcpy(buff.begin(), &m_scratchpad, buff.size());
+            std::span<std::byte const> const buffSpan {buff};
+            uint8_t const firstCRC = MathUtil::crc8(buffSpan.subspan(0, 8));
+            uint8_t const lastCRC = MathUtil::crc8(buffSpan.subspan(9, 8));
+
+            TRACE("Calculated First CRC: {} / Provided CRC: {}", firstCRC, m_scratchpad.firstCRC);
+            TRACE("Calculated Last CRC: {} / Provided CRC: {}", lastCRC, m_scratchpad.lastCRC);
+
+            if (firstCRC != m_scratchpad.firstCRC || lastCRC != m_scratchpad.lastCRC) {
+                DEBUG("On-Board temperature CRC mismatch, retrying");
+                return false;
+            }
+
+            DEBUG("On-Board temperature: {:.2f} C", static_cast<float>(m_scratchpad.temperature) / 128);
 
             TRACE("Scratchpad Config - conversionMode: {} / averageEightConversions: {} / "
                   "alertPinMode: {} / useLongConversionTime: {} / useSixteenBitTemperatureFormat: {}",
@@ -65,6 +84,7 @@ namespace kilight::hw {
                   static_cast<int16_t>(m_scratchpad.temperatureAlertLow),
                   static_cast<int16_t>(m_scratchpad.temperatureAlertHigh),
                   static_cast<int16_t>(m_scratchpad.temperatureOffset));
+
             onTemperatureReady(currentTemperature());
         }
         return result;

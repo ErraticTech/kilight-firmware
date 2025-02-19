@@ -22,8 +22,19 @@ namespace kilight::util {
         static uint16_t crc16(DataT const & data) {
             std::array<std::byte, sizeof(DataT)> buffer;
             memcpy(buffer.begin(), &data, sizeof(DataT));
-            return crc16(std::span{buffer});
+            return crc16(std::span<std::byte const>{buffer});
         }
+
+        static uint8_t crc8(std::span<std::byte const> data);
+
+        template<typename DataT>
+        static uint8_t crc8(DataT const & data) {
+            std::array<std::byte, sizeof(DataT)> buffer;
+            memcpy(buffer.begin(), &data, sizeof(DataT));
+            return crc8(std::span<std::byte const>{buffer});
+        }
+
+        static uint8_t reverseBits(uint8_t data);
 
         /**
          * Returns the direction along the number line one must move second to bring it closer to first.

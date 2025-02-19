@@ -138,7 +138,7 @@ namespace kilight::hw {
         };
 
         struct PACKED scratchpad_t {
-            int16_t temperature: 16 = 0;
+            int16_t temperature = 0;
 
             status_register_t status {};
 
@@ -146,21 +146,21 @@ namespace kilight::hw {
 
             configuration_register_t configurationRegister {};
 
-            uint8_t shortAddress: 8 = 0;
+            uint8_t shortAddress = 0;
 
             unsigned: 8;
 
-            uint8_t firstCRC: 8 = 0;
+            uint8_t firstCRC = 0;
 
-            int16_t temperatureAlertLow: 16 = 0;
+            int16_t temperatureAlertLow = 0;
 
-            int16_t temperatureAlertHigh: 16 = 0;
+            int16_t temperatureAlertHigh = 0;
 
-            int16_t temperatureOffset: 16 = 0;
+            int16_t temperatureOffset = 0;
 
             unsigned: 16;
 
-            uint8_t lastCRC: 8 = 0;
+            uint8_t lastCRC = 0;
         };
 
 
