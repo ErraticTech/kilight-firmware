@@ -22,13 +22,14 @@
 using kilight::core::LogSink;
 using kilight::hw::SysClock;
 using kilight::hw::SystemPins;
-using kilight::core::LogSink;
 
 namespace kilight {
 
     KiLight::KiLight() :
+        Program(),
         m_wifiSubsystem(subsystems()),
-        m_oneWireSubsystem(subsystems()) {
+        m_oneWireSubsystem(subsystems()),
+        m_lightSubsystem(subsystems(), &m_wifiSubsystem){
     }
 
     LogSink const* KiLight::logSink() const {

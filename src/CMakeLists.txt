@@ -1,5 +1,6 @@
 
-add_library(kilight-firmware-lib STATIC
+add_executable(kilight-firmware
+        main.cpp
         sdk-config/lwipopts.h
         kilight/KiLight.h
         kilight/KiLight.cpp
@@ -24,7 +25,6 @@ add_library(kilight-firmware-lib STATIC
         kilight/com/WifiSubsystem.h
         kilight/com/WifiSubsystem.cpp
         kilight/output/rgbcw_color.h
-        kilight/output/rgbcw_color.cpp
         kilight/core/Alarm.h
         kilight/conf/HardwareConfig.h
         kilight/conf/HardwareConfig.cpp
@@ -43,19 +43,24 @@ add_library(kilight-firmware-lib STATIC
         kilight/hw/onewire_address.h
         kilight/hw/TMP1826Driver.cpp
         kilight/hw/TMP1826Driver.h
+        kilight/core/CriticalSection.h
+        kilight/core/CriticalSection.cpp
+        kilight/output/LightSubsystem.h
+        kilight/output/LightSubsystem.cpp
+        kilight/output/output_data.h
 )
 
-target_compile_options(kilight-firmware-lib PRIVATE
+target_compile_options(kilight-firmware PRIVATE
         -Wall
         -Wextra
 )
 
-target_include_directories(kilight-firmware-lib PUBLIC
+target_include_directories(kilight-firmware PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}"
         "${CMAKE_CURRENT_LIST_DIR}/sdk-config"
 )
 
-target_link_libraries(kilight-firmware-lib PUBLIC
+target_link_libraries(kilight-firmware PUBLIC
         pico_stdlib
         pico_lwip
         pico_lwip_mdns
@@ -72,12 +77,17 @@ target_link_libraries(kilight-firmware-lib PUBLIC
         micro-program-framework
 )
 
-target_compile_definitions(kilight-firmware-lib PUBLIC
+target_compile_definitions(kilight-firmware PUBLIC
         PICO_FLASH_ASSUME_CORE1_SAFE=1
 )
 
-pico_enable_stdio_usb(kilight-firmware-lib OFF)
-pico_enable_stdio_uart(kilight-firmware-lib ON)
+target_link_options(kilight-firmware PRIVATE
+        LINKER:--print-memory-usage
+)
+
+pico_enable_stdio_usb(kilight-firmware OFF)
+pico_enable_stdio_uart(kilight-firmware ON)
+pico_add_extra_outputs(kilight-firmware)
 
 message(STATUS "Generating project config file")
 
@@ -85,17 +95,6 @@ configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/kilight/conf/ProjectConfig.cpp.in"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/kilight/conf/ProjectConfig.cpp"
         @ONLY
-)
-
-add_custom_command(COMMENT "Generating build config file"
-        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/kilight/conf/BuildConfig.cpp.in"
-        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/kilight/conf/BuildConfig.cpp"
-        COMMAND ${CMAKE_COMMAND}
-        -DCONFIG_INPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/kilight/conf/BuildConfig.cpp.in
-        -DCONFIG_OUTPUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/generated/kilight/conf/BuildConfig.cpp
-        -P "${PROJECT_SOURCE_DIR}/cmake/GenerateBuildConfigFile.cmake"
-        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-        VERBATIM
 )
 
 message(STATUS "Generating wifi config file")
@@ -106,25 +105,22 @@ configure_file(
         @ONLY
 )
 
-target_sources(kilight-firmware-lib PRIVATE
+add_custom_target(kilight-firmware-generate-build-config
+        COMMENT "Generating build config file"
+        BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/generated/kilight/conf/BuildConfig.cpp"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kilight/conf/BuildConfig.cpp.in"
+        VERBATIM
+        COMMAND ${CMAKE_COMMAND}
+        -DCONFIG_INPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/kilight/conf/BuildConfig.cpp.in
+        -DCONFIG_OUTPUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/generated/kilight/conf/BuildConfig.cpp
+        -P "${PROJECT_SOURCE_DIR}/cmake/GenerateBuildConfigFile.cmake"
+)
+
+target_sources(kilight-firmware PRIVATE
         "${CMAKE_CURRENT_BINARY_DIR}/generated/kilight/conf/BuildConfig.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/kilight/conf/ProjectConfig.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/kilight/conf/WifiConfig.cpp"
 )
 
-add_executable(kilight-firmware
-        main.cpp
-)
-
-target_link_libraries(kilight-firmware PUBLIC kilight-firmware-lib)
-
-target_compile_options(kilight-firmware PRIVATE
-        -Wall
-        -Wextra
-)
-
-target_link_options(kilight-firmware PRIVATE
-        LINKER:--print-memory-usage
-)
-
-pico_add_extra_outputs(kilight-firmware)
+add_dependencies(kilight-firmware kilight-firmware-generate-build-config)

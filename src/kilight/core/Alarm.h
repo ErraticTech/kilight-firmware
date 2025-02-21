@@ -15,11 +15,12 @@
 namespace kilight::core {
     class Alarm {
 
+        // ReSharper disable once CppDFAConstantFunctionResult
         static int64_t callbackWrapper(alarm_id_t const id, void * const context) {
             if (context == nullptr) {
                 return 0;
             }
-            auto castContext = static_cast<Alarm *>(context);
+            auto const castContext = static_cast<Alarm *>(context);
             if (id == castContext->m_activeAlarmId) {
                 castContext->m_activeAlarmId = -1;
             }

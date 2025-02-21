@@ -40,7 +40,7 @@ namespace kilight::hw {
             return *this;
         }
 
-        auto operator<=>(onewire_address_t const& other) const = default;
+        constexpr auto operator<=>(onewire_address_t const& other) const noexcept = default;
 
         [[nodiscard]]
         uint8_t deviceFamily() const {

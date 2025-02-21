@@ -52,7 +52,7 @@ namespace kilight::com {
 
         uint16_t volatile current: 16 = 0;
 
-        auto operator<=>(output_state_t const &other) const = default;
+        constexpr auto operator<=>(output_state_t const &other) const noexcept = default;
 
         output_state_t & operator=(write_request_t const & writeRequest) {
             color = writeRequest.color;
@@ -73,7 +73,7 @@ namespace kilight::com {
 
         uint16_t volatile fanOutputPerThou: 16 = 0;
 
-        auto operator<=>(state_data_t const &other) const = default;
+        constexpr auto operator<=>(state_data_t const &other) const noexcept = default;
     };
 
     struct PACKED system_info_t {

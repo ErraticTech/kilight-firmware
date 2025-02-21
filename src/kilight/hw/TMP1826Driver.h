@@ -124,7 +124,7 @@ namespace kilight::hw {
             FlexAddressMode flexAddressMode: 2 = FlexAddressMode::Host;
             bool overdriveEnabled: 1 = true;
 
-            auto operator<=>(configuration_register_t const & other) const = default;
+            constexpr auto operator<=>(configuration_register_t const & other) const noexcept = default;
         };
 
         struct PACKED status_register_t {

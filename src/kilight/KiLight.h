@@ -14,6 +14,7 @@
 #include "kilight/core/LogSink.h"
 #include "kilight/com/WifiSubsystem.h"
 #include "kilight/hw/OneWireSubsystem.h"
+#include "kilight/output/LightSubsystem.h"
 
 namespace kilight {
 
@@ -50,6 +51,8 @@ namespace kilight {
         com::WifiSubsystem m_wifiSubsystem;
 
         hw::OneWireSubsystem m_oneWireSubsystem;
+
+        output::LightSubsystem m_lightSubsystem;
     };
 
 } // namespace kilight
