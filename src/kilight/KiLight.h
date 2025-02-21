@@ -12,6 +12,7 @@
 #include <mpf/core/Logging.h>
 
 #include "kilight/core/LogSink.h"
+#include "kilight/storage/StorageSubsystem.h"
 #include "kilight/com/WifiSubsystem.h"
 #include "kilight/hw/OneWireSubsystem.h"
 #include "kilight/output/LightSubsystem.h"
@@ -47,6 +48,8 @@ namespace kilight {
 
     private:
         core::LogSink const m_logSink;
+
+        storage::StorageSubsystem m_storageSubsystem;
 
         com::WifiSubsystem m_wifiSubsystem;
 

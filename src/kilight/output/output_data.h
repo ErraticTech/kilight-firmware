@@ -6,11 +6,13 @@
 
 #pragma once
 
+#include <mpf/util/macros.h>
+
 #include "kilight/output/rgbcw_color.h"
 #include "kilight/com/server_protocol.h"
 
 namespace kilight::output {
-    struct output_data_t {
+    struct PACKED output_data_t {
         rgbcw_color_volatile_t color {};
         uint8_t volatile brightnessMultiplier = 0;
         bool volatile powerOn = false;

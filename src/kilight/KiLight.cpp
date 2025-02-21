@@ -27,7 +27,8 @@ namespace kilight {
 
     KiLight::KiLight() :
         Program(),
-        m_wifiSubsystem(subsystems()),
+        m_storageSubsystem(subsystems()),
+        m_wifiSubsystem(subsystems(), &m_storageSubsystem),
         m_oneWireSubsystem(subsystems()),
         m_lightSubsystem(subsystems(), &m_wifiSubsystem){
     }

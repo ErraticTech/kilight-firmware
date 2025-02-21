@@ -7,23 +7,17 @@
 #include "kilight/com/server_protocol.h"
 
 #include "kilight/conf/ProjectConfig.h"
-#include "mpf/util/StringUtil.h"
+#include "kilight/conf/HardwareConfig.h"
 
 using kilight::conf::getProjectConfig;
-using mpf::util::StringUtil;
+using kilight::conf::HardwareConfig;
 
 namespace kilight::com {
-    system_info_t::system_info_t() {
-        auto const& projectConfig = getProjectConfig();
-        StringUtil::copyToFixedLengthBuffer(projectConfig.DeviceName, model, sizeof(model));
-        StringUtil::copyToFixedLengthBuffer(projectConfig.ManufacturerName,
-                                            manufacturer,
-                                            sizeof(manufacturer));
-        StringUtil::copyToFixedLengthBuffer(projectConfig.VersionString,
-                                            firmwareVersion,
-                                            sizeof(firmwareVersion));
-        StringUtil::copyToFixedLengthBuffer(projectConfig.HardwareVersionString,
-                                            hardwareVersion,
-                                            sizeof(hardwareVersion));
-    }
+    system_info_t::system_info_t() :
+        hardwareId("{:016X}", HardwareConfig::getUniqueID()),
+        model(getProjectConfig().DeviceName),
+        manufacturer(getProjectConfig().ManufacturerName),
+        firmwareVersion(getProjectConfig().VersionString),
+        hardwareVersion(getProjectConfig().HardwareVersionString)
+        {}
 }

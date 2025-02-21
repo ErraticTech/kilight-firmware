@@ -12,14 +12,13 @@
 #include <pico/cyw43_arch.h>
 
 
-#include <mpf/util/FixedFormattedString.h>
+#include <mpf/types/FixedFormattedString.h>
 #include <mpf/core/Logging.h>
-#include <mpf/core/List.h>
 #include <mpf/core/Subsystem.h>
-#include <mpf/util/macros.h>
 
 #include "kilight/com/server_protocol.h"
 #include "kilight/core/Alarm.h"
+#include "kilight/storage/StorageSubsystem.h"
 
 #define KILIGHT_FIXED_STRING_BUFFER(name, templateString) \
         char name[sizeof(templateString)] { templateString };
@@ -44,7 +43,7 @@ namespace kilight::com {
         [[nodiscard]]
         static int32_t rssi();
 
-        explicit WifiSubsystem(mpf::core::SubsystemList * list);
+        WifiSubsystem(mpf::core::SubsystemList * list, storage::StorageSubsystem * storage);
 
         void setUp() override;
 
@@ -109,6 +108,14 @@ namespace kilight::com {
 
         State m_stateAfterWait = State::Invalid;
 
+        storage::StorageSubsystem * const m_storage;
+
+        std::array<char, MaxSSIDLength + 1> m_ssidBuff {};
+
+        std::string_view m_ssid {};
+
+        std::array<char, MaxPasswordLength + 1> m_passwordBuff {};
+
         int m_lastLinkStatus = 0;
 
         core::Alarm m_alarm;
@@ -123,9 +130,9 @@ namespace kilight::com {
 
         bool volatile m_verifyConnectionNeeded = false;
 
-        mpf::util::FixedFormattedString<32> m_mdnsHardwareId;
+        mpf::types::FixedFormattedString<32> m_mdnsHardwareId;
 
-        mpf::util::FixedFormattedString<32> m_hostname;
+        mpf::types::FixedFormattedString<32> m_hostname;
 
         void retryConnectionWait();
 

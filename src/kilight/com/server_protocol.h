@@ -10,6 +10,7 @@
 #include <compare>
 
 #include <mpf/util/macros.h>
+#include <mpf/types/FixedPackedString.h>
 
 #include "kilight/output/rgbcw_color.h"
 
@@ -76,21 +77,27 @@ namespace kilight::com {
         constexpr auto operator<=>(state_data_t const &other) const noexcept = default;
     };
 
+
     struct PACKED system_info_t {
-        NONSTRING
-        char hardwareId[16] {};
+        static constexpr uint8_t HardwareIdStringMaxSize = 16;
 
-        NONSTRING
-        char model[32] {};
+        static constexpr uint8_t ModelStringMaxSize = 32;
 
-        NONSTRING
-        char manufacturer[32] {};
+        static constexpr uint8_t ManufacturerStringMaxSize = 32;
 
-        NONSTRING
-        char firmwareVersion[16] {};
+        static constexpr uint8_t FirmwareVersionStringMaxSize = 16;
 
-        NONSTRING
-        char hardwareVersion[16] {};
+        static constexpr uint8_t HardwareVersionStringMaxSize = 16;
+
+        mpf::core::FixedPackedString<HardwareIdStringMaxSize> hardwareId;
+
+        mpf::core::FixedPackedString<ModelStringMaxSize> model;
+
+        mpf::core::FixedPackedString<ManufacturerStringMaxSize> manufacturer;
+
+        mpf::core::FixedPackedString<FirmwareVersionStringMaxSize> firmwareVersion;
+
+        mpf::core::FixedPackedString<HardwareVersionStringMaxSize> hardwareVersion;
 
         system_info_t();
     };

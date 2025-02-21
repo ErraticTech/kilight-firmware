@@ -6,6 +6,7 @@
 #include "kilight/com/WifiSubsystem.h"
 
 #include <cstring>
+#include <cassert>
 
 #include <pico/cyw43_arch.h>
 #include <lwip/netif.h>
@@ -20,12 +21,15 @@
 using mpf::util::StringUtil;
 using kilight::conf::getWifiConfig;
 using kilight::conf::HardwareConfig;
+using kilight::storage::StorageSubsystem;
 
 namespace kilight::com {
-    WifiSubsystem::WifiSubsystem(mpf::core::SubsystemList* list) :
+    WifiSubsystem::WifiSubsystem(mpf::core::SubsystemList* const list, StorageSubsystem* const storage) :
         Subsystem(list),
+        m_storage(storage),
         m_mdnsHardwareId(HardwareIdFormatString, HardwareConfig::getUniqueID()),
         m_hostname(HostNameFormatString, HardwareConfig::getUniqueID()) {
+        assert(m_storage != nullptr);
         instance = this;
     }
 
@@ -140,13 +144,18 @@ namespace kilight::com {
     }
 
     void WifiSubsystem::disconnectedState() {
-        if (int const errorCode = cyw43_arch_wifi_connect_async(getWifiConfig().SSID.data(),
-                                                                getWifiConfig().Password.data(),
+        StorageSubsystem::saveData().wifi.ssid.copyTo(m_ssidBuff);
+        m_ssid = { m_ssidBuff.data(), StorageSubsystem::saveData().wifi.ssid.length() };
+
+        StorageSubsystem::saveData().wifi.password.copyTo(m_passwordBuff);
+
+        if (int const errorCode = cyw43_arch_wifi_connect_async(m_ssidBuff.data(),
+                                                                m_passwordBuff.data(),
                                                                 CYW43_AUTH_WPA2_AES_PSK)) {
             panic("Failed to start connection to wifi, error code: %d", errorCode);
         }
 
-        DEBUG("Connecting to \"{}\"...", getWifiConfig().SSID);
+        DEBUG("Connecting to \"{}\"...", m_ssid);
 
         m_lastLinkStatus = INT_MAX;
 
@@ -185,17 +194,17 @@ namespace kilight::com {
             break;
 
         case CYW43_LINK_FAIL:
-            ERROR("Unable to connect to wifi network with SSID \"{}\": Unknown failure", getWifiConfig().SSID);
+            ERROR("Unable to connect to wifi network with SSID \"{}\": Unknown failure", m_ssid);
             retryConnectionWait();
             break;
 
         case CYW43_LINK_NONET:
-            ERROR("Unable to find wifi network with SSID \"{}\"", getWifiConfig().SSID);
+            ERROR("Unable to find wifi network with SSID \"{}\"", m_ssid);
             retryConnectionWait();
             break;
 
         case CYW43_LINK_BADAUTH:
-            ERROR("Unable to connect to wifi network with SSID \"{}\": Authentication failure", getWifiConfig().SSID);
+            ERROR("Unable to connect to wifi network with SSID \"{}\": Authentication failure", m_ssid);
             retryConnectionWait();
             break;
 
@@ -357,17 +366,14 @@ namespace kilight::com {
     }
 
     void WifiSubsystem::queueSystemInfoReply(connected_session_t& session) {
+        // The constructor will automatically fill out the system info. Since it's a somewhat heavy operation and the
+        // data never changes, just store it statically after the first time
+        static system_info_response_t wrappedSystemInfo{};
         if (static_cast<size_t>(BufferSize - session.sendLength) < sizeof(system_info_response_t)) {
             WARN("Insufficient send buffer space for system info data reply");
             return;
         }
         DEBUG("Processing system info request");
-        system_info_response_t wrappedSystemInfo;
-        StringUtil::longLongToHex(HardwareConfig::getUniqueID(),
-                                  std::span{
-                                      wrappedSystemInfo.body.hardwareId,
-                                      sizeof(wrappedSystemInfo.body.hardwareId)
-                                  });
         memcpy(session.sendBuffer.begin() + session.sendLength, &wrappedSystemInfo, sizeof(system_info_response_t));
         session.sendLength += sizeof(system_info_response_t);
     }

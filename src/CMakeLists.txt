@@ -48,6 +48,10 @@ add_executable(kilight-firmware
         kilight/output/LightSubsystem.h
         kilight/output/LightSubsystem.cpp
         kilight/output/output_data.h
+        kilight/storage/save_data.h
+        kilight/storage/StorageSubsystem.h
+        kilight/storage/StorageSubsystem.cpp
+        kilight/com/wifi_data.h
 )
 
 target_compile_options(kilight-firmware PRIVATE
