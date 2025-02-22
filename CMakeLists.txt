@@ -14,8 +14,13 @@ set(HARDWARE_VERSION "${HARDWARE_VERSION_MAJOR}.${HARDWARE_VERSION_MINOR}.${HARD
 
 set(PICO_BOARD_HEADER_DIRS "${CMAKE_CURRENT_LIST_DIR}/boards/")
 set(PICO_BOARD "kilight-mono-v1.0.x")
-set(PICO_SDK_FETCH_FROM_GIT ON)
-set(PICO_SDK_FETCH_FROM_GIT_TAG "2.1.1")
+
+if (NOT IS_DIRECTORY PICO_SDK_PATH)
+    message(STATUS "No PICO_SDK_PATH set, using PICO_SDK_FETCH_FROM_GIT instead")
+    set(PICO_SDK_FETCH_FROM_GIT ON)
+    set(PICO_SDK_FETCH_FROM_GIT_TAG "2.1.1")
+endif()
+
 include(pico_sdk_import)
 
 project(kilight-firmware VERSION 1.0.0
