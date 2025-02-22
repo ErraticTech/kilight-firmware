@@ -54,14 +54,7 @@ namespace kilight::output {
 
     void LightSubsystem::work() {
         TRACE("Light data syncing");
-        bool outputAChanged = false;
-
-        {
-            auto const lock = m_criticalSection.lock();
-            outputAChanged = m_outputA.updateLive();
-        }
-
-        if (outputAChanged) {
+        if (updateLiveOutputs()) {
             m_outputA.calculateTargetOutput();
             startFadeAlarm();
         }
@@ -102,6 +95,11 @@ namespace kilight::output {
                 alarm.restart(FadeTickMs);
             }
         });
+    }
+
+    bool LightSubsystem::updateLiveOutputs() {
+        auto const lock = m_criticalSection.lock();
+        return m_outputA.updateLive();
     }
 
 }

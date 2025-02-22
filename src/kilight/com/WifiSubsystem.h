@@ -17,6 +17,7 @@
 #include <mpf/core/Subsystem.h>
 
 #include "kilight/com/server_protocol.h"
+#include "kilight/conf/HardwareConfig.h"
 #include "kilight/core/Alarm.h"
 #include "kilight/storage/StorageSubsystem.h"
 
@@ -27,6 +28,7 @@ namespace kilight::com {
 
     class WifiSubsystem final : public mpf::core::Subsystem {
         LOGGER(Wifi);
+
     public:
         static constexpr uint32_t WifiConnectRetryMsec = 5000;
 
@@ -43,7 +45,7 @@ namespace kilight::com {
         [[nodiscard]]
         static int32_t rssi();
 
-        WifiSubsystem(mpf::core::SubsystemList * list, storage::StorageSubsystem * storage);
+        WifiSubsystem(mpf::core::SubsystemList* list, storage::StorageSubsystem* storage);
 
         void setUp() override;
 
@@ -53,17 +55,17 @@ namespace kilight::com {
         void work() override;
 
         [[nodiscard]]
-        state_data_t const & stateData() const;
+        state_data_t const& stateData() const;
 
-        template<typename UpdateFuncT>
-        void updateStateData(UpdateFuncT && updateFunc) {
+        template <typename UpdateFuncT>
+        void updateStateData(UpdateFuncT&& updateFunc) {
             cyw43_arch_lwip_begin();
             updateFunc(m_stateData);
             cyw43_arch_lwip_end();
         }
 
-        template<typename CallbackT>
-        void setWriteRequestCallback(CallbackT && callback) {
+        template <typename CallbackT>
+        void setWriteRequestCallback(CallbackT&& callback) {
             m_writeRequestCallback = std::forward<CallbackT>(callback);
         }
 
@@ -81,11 +83,11 @@ namespace kilight::com {
         };
 
         struct connected_session_t {
-            tcp_pcb * clientPCB = nullptr;
+            tcp_pcb* clientPCB = nullptr;
 
-            std::array<uint8_t, BufferSize> sendBuffer {};
+            std::array<uint8_t, BufferSize> sendBuffer{};
 
-            std::array<uint8_t, BufferSize> receiveBuffer {};
+            std::array<uint8_t, BufferSize> receiveBuffer{};
 
             uint16_t sendLength = 0;
 
@@ -96,43 +98,49 @@ namespace kilight::com {
             bool volatile dataPending = false;
         };
 
-        static inline WifiSubsystem * instance = nullptr;
+        static inline WifiSubsystem* instance = nullptr;
 
-        static err_t closeSession(connected_session_t * session);
+        static err_t closeSession(connected_session_t* session);
 
-        static void queueSystemInfoReply(connected_session_t & session);
+        static void queueSystemInfoReply(connected_session_t& session);
 
-        static void sendResponse(connected_session_t & session);
+        static void sendResponse(connected_session_t& session);
 
         State volatile m_state = State::Invalid;
 
         State m_stateAfterWait = State::Invalid;
 
-        storage::StorageSubsystem * const m_storage;
+        storage::StorageSubsystem* const m_storage;
 
-        std::array<char, MaxSSIDLength + 1> m_ssidBuff {};
+        std::array<char, MaxSSIDLength + 1> m_ssidBuff{};
 
-        std::string_view m_ssid {};
+        std::string_view m_ssid{};
 
-        std::array<char, MaxPasswordLength + 1> m_passwordBuff {};
+        std::array<char, MaxPasswordLength + 1> m_passwordBuff{};
 
         int m_lastLinkStatus = 0;
 
         core::Alarm m_alarm;
 
-        tcp_pcb * m_serverPCB = nullptr;
+        tcp_pcb* m_serverPCB = nullptr;
 
         std::array<connected_session_t, MaxConnections> m_connectedSessions = {};
 
         state_data_t m_stateData = {};
 
-        std::function<void(write_request_t const &)> m_writeRequestCallback;
+        std::function<void(write_request_t const&)> m_writeRequestCallback;
 
         bool volatile m_verifyConnectionNeeded = false;
 
-        mpf::types::FixedFormattedString<32> m_mdnsHardwareId;
+        mpf::types::FixedFormattedString<32> m_mdnsHardwareId{
+                HardwareIdFormatString,
+                conf::HardwareConfig::getUniqueID()
+            };
 
-        mpf::types::FixedFormattedString<32> m_hostname;
+        mpf::types::FixedFormattedString<32> m_hostname{
+                HostNameFormatString,
+                conf::HardwareConfig::getUniqueID()
+            };
 
         void retryConnectionWait();
 
@@ -151,16 +159,16 @@ namespace kilight::com {
 
         void verifyConnectedState();
 
-        void processClientData(connected_session_t & session) const;
+        void processClientData(connected_session_t& session) const;
 
 
-        void queueStateReply(connected_session_t & session) const;
+        void queueStateReply(connected_session_t& session) const;
 
-        void processWrite(connected_session_t & session) const;
+        void processWrite(connected_session_t& session) const;
 
-        err_t acceptCallback(tcp_pcb *clientPCB, err_t error);
+        err_t acceptCallback(tcp_pcb* clientPCB, err_t error);
 
-        err_t receiveCallback(connected_session_t * session, tcp_pcb* tpcb, pbuf * data, err_t error);
+        err_t receiveCallback(connected_session_t* session, tcp_pcb* tpcb, pbuf* data, err_t error);
 
     };
 

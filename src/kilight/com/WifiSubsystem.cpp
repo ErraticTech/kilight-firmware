@@ -16,19 +16,15 @@
 #include <mpf/util/StringUtil.h>
 
 #include "kilight/conf/WifiConfig.h"
-#include "kilight/conf/HardwareConfig.h"
 
 using mpf::util::StringUtil;
 using kilight::conf::getWifiConfig;
-using kilight::conf::HardwareConfig;
 using kilight::storage::StorageSubsystem;
 
 namespace kilight::com {
     WifiSubsystem::WifiSubsystem(mpf::core::SubsystemList* const list, StorageSubsystem* const storage) :
         Subsystem(list),
-        m_storage(storage),
-        m_mdnsHardwareId(HardwareIdFormatString, HardwareConfig::getUniqueID()),
-        m_hostname(HostNameFormatString, HardwareConfig::getUniqueID()) {
+        m_storage(storage) {
         assert(m_storage != nullptr);
         instance = this;
     }

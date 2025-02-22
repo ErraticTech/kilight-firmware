@@ -20,13 +20,13 @@ namespace kilight::core {
 
             ScopeLock(ScopeLock const &) = delete;
 
-            ScopeLock(ScopeLock &&) = default;
+            ScopeLock(ScopeLock && other) noexcept;
 
             ~ScopeLock();
 
             ScopeLock & operator=(ScopeLock const & other) = delete;
 
-            ScopeLock & operator=(ScopeLock && other) = default;
+            ScopeLock & operator=(ScopeLock && other) = delete;
 
         private:
             explicit ScopeLock(CriticalSection * owner);

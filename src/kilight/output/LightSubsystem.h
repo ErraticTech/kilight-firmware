@@ -82,5 +82,7 @@ namespace kilight::output {
         output_state_t m_outputA { "Output A" };
 
         void startFadeAlarm();
+
+        bool updateLiveOutputs();
     };
 }

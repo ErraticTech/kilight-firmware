@@ -10,12 +10,17 @@
 
 namespace kilight::core {
 
-    CriticalSection::ScopeLock::ScopeLock(CriticalSection* const owner)
-        : m_owner(owner) {
+    CriticalSection::ScopeLock::ScopeLock(CriticalSection* const owner) :
+        m_owner(owner) {
         assert(m_owner != nullptr);
         m_owner->enter();
     }
 
+
+    CriticalSection::ScopeLock::ScopeLock(ScopeLock&& other) noexcept :
+        m_owner(other.m_owner) {
+        other.m_owner = nullptr;
+    }
 
     CriticalSection::ScopeLock::~ScopeLock() {
         m_owner->exit();

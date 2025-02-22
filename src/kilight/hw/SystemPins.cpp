@@ -34,7 +34,7 @@ namespace kilight::hw {
                                     FanPWM::Number, "Fan PWM"))
 
         ClearButton::initPin();
-        bi_decl(bi_1pin_with_name(ClearButton::Number, "Clear Button"));
+        bi_decl(bi_1pin_with_name(ClearButton::Number, "Clear Button"))
 
         DebugUARTTxD::initPin();
         DebugUARTRxD::initPin();

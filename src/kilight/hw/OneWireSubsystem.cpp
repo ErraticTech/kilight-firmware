@@ -142,10 +142,10 @@ namespace kilight::hw {
         }
 
         TRACE("Master config - activePullUp: {} strongPullUp: {} powerDown: {} oneWireOverdriveSpeed: {}",
-              m_masterConfiguration.activePullUp,
-              m_masterConfiguration.strongPullUp,
-              m_masterConfiguration.powerDown,
-              m_masterConfiguration.oneWireOverdriveSpeed);
+              static_cast<bool>(m_masterConfiguration.activePullUp),
+              static_cast<bool>(m_masterConfiguration.strongPullUp),
+              static_cast<bool>(m_masterConfiguration.powerDown),
+              static_cast<bool>(m_masterConfiguration.oneWireOverdriveSpeed));
 
         m_state = State::WriteMasterConfigurationStart;
     }

@@ -21,7 +21,6 @@ add_executable(kilight-firmware
         kilight/hw/SystemPins.h
         kilight/hw/SystemPins.cpp
         kilight/com/server_protocol.h
-        kilight/com/server_protocol.cpp
         kilight/com/WifiSubsystem.h
         kilight/com/WifiSubsystem.cpp
         kilight/output/rgbcw_color.h
