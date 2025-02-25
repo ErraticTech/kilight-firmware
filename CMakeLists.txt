@@ -35,8 +35,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 
-pico_sdk_init()
-
 # A file that defines the cache variables WIFI_SSID and WIFI_PASSWORD to set what wifi network to connect to. Will
 # eventually be replaced by dynamic configuration so it doesn't need to be compiled in.
 if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/Secrets.cmake")
@@ -45,7 +43,9 @@ endif()
 
 set(MPF_LOG_LEVEL "Debug" CACHE INTERNAL "")
 
-add_subdirectory(lib/micro-program-framework)
+pico_sdk_init()
+
+add_subdirectory(lib)
 
 add_subdirectory(src)
 

@@ -2,3 +2,7 @@
 	path = lib/micro-program-framework
 	url = ../micro-program-framework.git
     update = merge
+[submodule "lib/kilight-protocol"]
+	path = lib/kilight-protocol
+	url = ../kilight-protocol.git
+    update = merge

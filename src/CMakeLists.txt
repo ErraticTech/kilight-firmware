@@ -80,6 +80,7 @@ target_link_libraries(kilight-firmware PUBLIC
         hardware_watchdog
         hardware_flash
         micro-program-framework
+        kilight-protocol
 )
 
 target_compile_definitions(kilight-firmware PUBLIC
