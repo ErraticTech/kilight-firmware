@@ -16,10 +16,14 @@
 #include <mpf/core/Logging.h>
 #include <mpf/core/Subsystem.h>
 
-#include "kilight/com/server_protocol.h"
+#include <kilight/protocol/Request.h>
+#include <kilight/protocol/Response.h>
+
+#include "kilight/com/ServerReadBuffer.h"
 #include "kilight/conf/HardwareConfig.h"
 #include "kilight/core/Alarm.h"
 #include "kilight/storage/StorageSubsystem.h"
+#include "kilight/com/ServerWriteBuffer.h"
 
 #define KILIGHT_FIXED_STRING_BUFFER(name, templateString) \
         char name[sizeof(templateString)] { templateString };
@@ -55,7 +59,7 @@ namespace kilight::com {
         void work() override;
 
         [[nodiscard]]
-        state_data_t const& stateData() const;
+        protocol::SystemState const& stateData() const;
 
         template <typename UpdateFuncT>
         void updateStateData(UpdateFuncT&& updateFunc) {
@@ -85,13 +89,9 @@ namespace kilight::com {
         struct connected_session_t {
             tcp_pcb* clientPCB = nullptr;
 
-            std::array<uint8_t, BufferSize> sendBuffer{};
+            ServerReadBuffer<BufferSize> readBuffer {};
 
-            std::array<uint8_t, BufferSize> receiveBuffer{};
-
-            uint16_t sendLength = 0;
-
-            uint16_t receiveLength = 0;
+            ServerWriteBuffer<BufferSize> writeBuffer {};
 
             bool volatile inUse = false;
 
@@ -100,9 +100,14 @@ namespace kilight::com {
 
         static inline WifiSubsystem* instance = nullptr;
 
+        static protocol::SystemInfo buildSystemInfo();
+
         static err_t closeSession(connected_session_t* session);
 
+        static void queueReply(connected_session_t& session, protocol::Response const & response);
+
         static void queueSystemInfoReply(connected_session_t& session);
+
 
         static void sendResponse(connected_session_t& session);
 
@@ -126,9 +131,9 @@ namespace kilight::com {
 
         std::array<connected_session_t, MaxConnections> m_connectedSessions = {};
 
-        state_data_t m_stateData = {};
+        protocol::SystemState m_stateData;
 
-        std::function<void(write_request_t const&)> m_writeRequestCallback;
+        std::function<protocol::CommandResult(protocol::WriteOutput const&)> m_writeRequestCallback;
 
         bool volatile m_verifyConnectionNeeded = false;
 
@@ -161,10 +166,9 @@ namespace kilight::com {
 
         void processClientData(connected_session_t& session) const;
 
-
         void queueStateReply(connected_session_t& session) const;
 
-        void processWrite(connected_session_t& session) const;
+        void processWrite(connected_session_t& session, protocol::WriteOutput const & writeRequest) const;
 
         err_t acceptCallback(tcp_pcb* clientPCB, err_t error);
 

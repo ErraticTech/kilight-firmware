@@ -14,11 +14,11 @@ using mpf::core::SubsystemList;
 
 using kilight::hw::SystemPins;
 using kilight::com::WifiSubsystem;
-using kilight::com::state_data_t;
-using kilight::com::write_request_t;
-using kilight::com::OutputIdentifier;
 using kilight::storage::StorageSubsystem;
 using kilight::storage::save_data_t;
+using kilight::protocol::CommandResult;
+using kilight::protocol::SystemState;
+using kilight::protocol::WriteOutput;
 
 namespace kilight::output {
     LightSubsystem::LightSubsystem(SubsystemList* const list,
@@ -38,17 +38,29 @@ namespace kilight::output {
     void LightSubsystem::setUp() {
         m_outputA.pending = StorageSubsystem::saveData().outputA;
 
-        m_wifi->setWriteRequestCallback([this](write_request_t const& writeRequest) {
-            if (writeRequest.outputId == OutputIdentifier::OutputA) {
-                m_outputA.pending = output_data_t{writeRequest};
+        m_wifi->setWriteRequestCallback([this](protocol::WriteOutput const& writeRequest) {
+            CommandResult response;
+            if (writeRequest.get_outputId() == protocol::OutputIdentifier::OutputA) {
+                m_outputA.pending.color.red = static_cast<uint8_t>(writeRequest.color().red());
+                m_outputA.pending.color.green = static_cast<uint8_t>(writeRequest.color().green());
+                m_outputA.pending.color.blue = static_cast<uint8_t>(writeRequest.color().blue());
+                m_outputA.pending.color.coldWhite = static_cast<uint8_t>(writeRequest.color().coldWhite());
+                m_outputA.pending.color.warmWhite = static_cast<uint8_t>(writeRequest.color().warmWhite());
+                m_outputA.pending.brightnessMultiplier = static_cast<uint8_t>(writeRequest.brightness());
+                m_outputA.pending.powerOn = writeRequest.on();
+                response.set_result(CommandResult::Result::OK);
+            } else {
+                response.set_result(CommandResult::Result::Error);
             }
+            return response;
         });
 
         m_outputA.onChange = [this](output_data_t const&, output_data_t const& newValue) {
-            m_wifi->updateStateData([&newValue](state_data_t& state) {
-                state.outputA.color = newValue.color;
-                state.outputA.brightness = newValue.brightnessMultiplier;
-                state.outputA.on = newValue.powerOn;
+            m_wifi->updateStateData([&newValue](SystemState& state) {
+                auto & output = state.mutable_outputA();
+                output.set_color(newValue.color.toColor());
+                output.set_brightness(newValue.brightnessMultiplier);
+                output.set_on(static_cast<bool>(newValue.powerOn));
             });
 
             m_storage->updatePendingData([&newValue](save_data_t & saveData) {

@@ -20,7 +20,6 @@ add_executable(kilight-firmware
         kilight/hw/Pin.cpp
         kilight/hw/SystemPins.h
         kilight/hw/SystemPins.cpp
-        kilight/com/server_protocol.h
         kilight/com/WifiSubsystem.h
         kilight/com/WifiSubsystem.cpp
         kilight/output/rgbcw_color.h
@@ -53,6 +52,8 @@ add_executable(kilight-firmware
         kilight/com/wifi_data.h
         kilight/ui/UserInterfaceSubsystem.h
         kilight/ui/UserInterfaceSubsystem.cpp
+        kilight/com/ServerWriteBuffer.h
+        kilight/com/ServerReadBuffer.h
 )
 
 target_compile_options(kilight-firmware PRIVATE

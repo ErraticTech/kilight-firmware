@@ -16,6 +16,8 @@
 
 #include <mpf/util/macros.h>
 
+#include <kilight/protocol/Color.h>
+
 #include "kilight/util/MathUtil.h"
 
 namespace kilight::output {
@@ -60,6 +62,17 @@ namespace kilight::output {
             coldWhite = other.coldWhite;
             warmWhite = other.warmWhite;
             return *this;
+        }
+
+        [[nodiscard]]
+        protocol::Color toColor() const {
+            protocol::Color color;
+            color.set_red(red);
+            color.set_green(green);
+            color.set_blue(blue);
+            color.set_coldWhite(coldWhite);
+            color.set_warmWhite(warmWhite);
+            return color;
         }
 
         template <typename OtherColorT>

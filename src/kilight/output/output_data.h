@@ -9,7 +9,6 @@
 #include <mpf/util/macros.h>
 
 #include "kilight/output/rgbcw_color.h"
-#include "kilight/com/server_protocol.h"
 
 namespace kilight::output {
     struct PACKED output_data_t {
@@ -31,22 +30,10 @@ namespace kilight::output {
             powerOn(powerOn) {
         }
 
-        explicit output_data_t(com::write_request_t const & writeRequest) :
-            color(writeRequest.color),
-            brightnessMultiplier(writeRequest.brightness),
-            powerOn(writeRequest.on) {}
-
         constexpr auto operator<=>(output_data_t const& other) const noexcept = default;
 
         output_data_t& operator=(rgbcw_color_t const& other) {
             color = other;
-            return *this;
-        }
-
-        output_data_t& operator=(com::write_request_t const& writeRequest) {
-            color = writeRequest.color;
-            brightnessMultiplier = writeRequest.brightness;
-            powerOn = writeRequest.on;
             return *this;
         }
 

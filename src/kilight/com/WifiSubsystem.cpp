@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <cassert>
+#include <limits>
 
 #include <pico/cyw43_arch.h>
 #include <lwip/netif.h>
@@ -16,10 +17,19 @@
 #include <mpf/util/StringUtil.h>
 
 #include "kilight/conf/WifiConfig.h"
+#include "kilight/conf/HardwareConfig.h"
+#include "kilight/conf/ProjectConfig.h"
 
 using mpf::util::StringUtil;
 using kilight::conf::getWifiConfig;
 using kilight::storage::StorageSubsystem;
+using kilight::protocol::SystemState;
+using kilight::protocol::Request;
+using kilight::protocol::Response;
+using kilight::protocol::SystemInfo;
+using kilight::protocol::CommandResult;
+using kilight::protocol::GetData;
+using kilight::protocol::WriteOutput;
 
 namespace kilight::com {
     WifiSubsystem::WifiSubsystem(mpf::core::SubsystemList* const list, StorageSubsystem* const storage) :
@@ -104,7 +114,7 @@ namespace kilight::com {
         cyw43_arch_poll();
     }
 
-    state_data_t const& WifiSubsystem::stateData() const {
+    SystemState const& WifiSubsystem::stateData() const {
         return m_stateData;
     }
 
@@ -129,7 +139,7 @@ namespace kilight::com {
         bool result = false;
         cyw43_arch_lwip_begin();
         for (connected_session_t const& session : m_connectedSessions) {
-            if (session.inUse && (session.dataPending || session.sendLength > 0)) {
+            if (session.inUse && (session.dataPending || !session.writeBuffer.empty())) {
                 result = true;
                 break;
             }
@@ -141,7 +151,7 @@ namespace kilight::com {
 
     void WifiSubsystem::disconnectedState() {
         StorageSubsystem::saveData().wifi.ssid.copyTo(m_ssidBuff);
-        m_ssid = { m_ssidBuff.data(), StorageSubsystem::saveData().wifi.ssid.length() };
+        m_ssid = {m_ssidBuff.data(), StorageSubsystem::saveData().wifi.ssid.length()};
 
         StorageSubsystem::saveData().wifi.password.copyTo(m_passwordBuff);
 
@@ -269,7 +279,7 @@ namespace kilight::com {
                 if (session.dataPending) {
                     processClientData(session);
                 }
-                if (session.sendLength != 0) {
+                if (!session.writeBuffer.empty()) {
                     sendResponse(session);
                 }
             }
@@ -301,88 +311,88 @@ namespace kilight::com {
 
     void WifiSubsystem::processClientData(connected_session_t& session) const {
         session.dataPending = false;
-        if (session.receiveLength == 0) {
+        uint8_t messageLength = 0;
+
+        if (!session.readBuffer.peek(messageLength)) {
             return;
         }
-
-        uint8_t const messageLength = session.receiveBuffer[0];
 
         if (messageLength == 0) {
-            session.receiveLength = 0;
+            session.readBuffer.clear();
             return;
         }
 
-        if (messageLength > session.receiveLength - 1) {
+        if (messageLength > session.readBuffer.get_size() - 1) {
             return;
         }
 
         DEBUG("Message received, processing...");
 
-        switch (auto const requestType = static_cast<RequestType>(session.receiveBuffer[1])) {
-            using enum RequestType;
-        case ReadRequest:
-            queueStateReply(session);
-            break;
+        session.readBuffer.advance();
 
-        case WriteRequest:
-            processWrite(session);
-            break;
+        Request request;
 
-        case SystemInfoRequest:
-            queueSystemInfoReply(session);
+        if (EmbeddedProto::Error const errorCode = request.deserialize(session.readBuffer);
+            errorCode != EmbeddedProto::Error::NO_ERRORS) {
+            ERROR("Error parsing request: {}", static_cast<uint8_t>(errorCode));
+            session.readBuffer.clear();
+            return;
+        }
+
+        switch (request.get_which_request_type()) {
+            using enum Request::FieldNumber;
+        case GETDATA: {
+            switch (request.get_getData()) {
+
+            case GetData::SystemState:
+                queueStateReply(session);
+                break;
+
+            case GetData::SystemInfo:
+                queueSystemInfoReply(session);
+                break;
+
+            default:
+                WARN("Invalid GetData type received: {:d}",
+                    static_cast<uint8_t>(request.get_getData()));
+                break;
+
+            }
+
+            break;
+        }
+
+        case WRITEOUTPUT:
+            processWrite(session, request.get_writeOutput());
             break;
 
         default:
-            WARN("Invalid request type received: {:d}", static_cast<uint8_t>(requestType));
+            WARN("Invalid request type received: {:d}", static_cast<uint8_t>(request.get_which_request_type()));
             break;
         }
 
-        uint16_t const messageEnd = messageLength + 1;
-        uint16_t const remainingBuffer = session.receiveLength - messageEnd;
-
-        for (size_t iter = 0; iter < remainingBuffer; ++iter) {
-            session.receiveBuffer[iter] = session.receiveBuffer[messageEnd + iter];
-        }
-        session.receiveLength = remainingBuffer;
-        DEBUG("Message processing complete, {} bytes remaining to process", session.receiveLength);
-        if (session.receiveLength > 0) {
+        DEBUG("Message processing complete, {} bytes remaining to process", session.readBuffer.get_size());
+        if (!session.readBuffer.empty()) {
             session.dataPending = true;
         }
     }
 
     void WifiSubsystem::queueStateReply(connected_session_t& session) const {
-        if (static_cast<size_t>(BufferSize - session.sendLength) < sizeof(state_response_t)) {
-            WARN("Insufficient send buffer space for state data reply");
-            return;
-        }
         DEBUG("Processing state request");
-        state_response_t const wrappedData{m_stateData};
-        memcpy(session.sendBuffer.begin() + session.sendLength, &wrappedData, sizeof(state_response_t));
-        session.sendLength += sizeof(state_response_t);
+        Response response;
+        response.set_systemState(m_stateData);
+        queueReply(session, response);
     }
-
-    void WifiSubsystem::queueSystemInfoReply(connected_session_t& session) {
-        // The constructor will automatically fill out the system info. Since it's a somewhat heavy operation and the
-        // data never changes, just store it statically after the first time
-        static system_info_response_t wrappedSystemInfo{};
-        if (static_cast<size_t>(BufferSize - session.sendLength) < sizeof(system_info_response_t)) {
-            WARN("Insufficient send buffer space for system info data reply");
-            return;
-        }
-        DEBUG("Processing system info request");
-        memcpy(session.sendBuffer.begin() + session.sendLength, &wrappedSystemInfo, sizeof(system_info_response_t));
-        session.sendLength += sizeof(system_info_response_t);
-    }
-
 
     void WifiSubsystem::sendResponse(connected_session_t& session) {
         cyw43_arch_lwip_check();
-        uint16_t const actuallySent = std::min(tcp_sndbuf(session.clientPCB), session.sendLength);
+        tcpwnd_size_t const actuallySent = std::min(tcp_sndbuf(session.clientPCB),
+                                                    static_cast<tcpwnd_size_t>(session.writeBuffer.get_size()));
         if (actuallySent == 0) {
             return;
         }
         if (err_t const error = tcp_write(session.clientPCB,
-                                          session.sendBuffer.begin(),
+                                          session.writeBuffer.data().data(),
                                           actuallySent,
                                           TCP_WRITE_FLAG_COPY);
             error != ERR_OK) {
@@ -391,22 +401,19 @@ namespace kilight::com {
             return;
         }
         DEBUG("Queued {} bytes to client", actuallySent);
-        session.sendLength -= actuallySent;
+        session.writeBuffer.remove(actuallySent);
     }
 
-    void WifiSubsystem::processWrite(connected_session_t& session) const {
-        if (session.receiveBuffer[0] - 1 != sizeof(write_request_t)) {
-            WARN("Incorrect write message size received");
-            return;
-        }
-
+    void WifiSubsystem::processWrite(connected_session_t& session,
+                                     WriteOutput const & writeRequest) const {
         DEBUG("Processing write request");
-        write_request_t writeRequest;
-        memcpy(&writeRequest, session.receiveBuffer.begin() + 2, sizeof(write_request_t));
-
+        Response response;
         if (m_writeRequestCallback) {
-            m_writeRequestCallback(writeRequest);
+            response.set_commandResult(m_writeRequestCallback(writeRequest));
+        } else {
+            response.mutable_commandResult().set_result(CommandResult::Result::OK);
         }
+        queueReply(session, response);
     }
 
     err_t WifiSubsystem::acceptCallback(tcp_pcb* const clientPCB, err_t const err) {
@@ -446,7 +453,7 @@ namespace kilight::com {
         tcp_sent(session->clientPCB,
                  [](void* context, tcp_pcb*, uint16_t const length) -> err_t {
                      auto const* const innerSession = static_cast<connected_session_t*>(context);
-                     DEBUG("TCP server sent {}/{}", length, innerSession->sendLength);
+                     DEBUG("TCP server sent {}/{}", length, innerSession->writeBuffer.get_size());
                      return ERR_OK;
                  });
 
@@ -475,14 +482,15 @@ namespace kilight::com {
 
         cyw43_arch_lwip_check();
         if (data->tot_len > 0) {
-            DEBUG("TCP Server receive {}/{} err {}", data->tot_len, session->receiveLength, error);
+            DEBUG("TCP Server receive {}/{} err {}", data->tot_len, session->readBuffer.get_size(), error);
 
-            uint16_t const remainingBuffer = BufferSize - session->receiveLength;
+            auto const remainingBuffer = static_cast<uint16_t>(session->readBuffer.get_available_size());
             uint16_t const bytesToRead = data->tot_len > remainingBuffer ? remainingBuffer : data->tot_len;
-            session->receiveLength += pbuf_copy_partial(data,
-                                                        session->receiveBuffer.begin() + session->receiveLength,
-                                                        bytesToRead,
-                                                        0);
+            if (bytesToRead > 0) {
+                uint8_t buffer[BufferSize] {};
+                pbuf_copy_partial(data, buffer, bytesToRead, 0);
+                session->readBuffer.write(std::span(buffer, bytesToRead));
+            }
             tcp_recved(tpcb, bytesToRead);
         }
         pbuf_free(data);
@@ -495,6 +503,32 @@ namespace kilight::com {
         return ERR_OK;
     }
 
+
+    SystemInfo WifiSubsystem::buildSystemInfo() {
+        auto const& projectConfig = conf::getProjectConfig();
+        std::array<char, 16> hardwareId{};
+        std::format_to_n(hardwareId.begin(),
+                         hardwareId.size(),
+                         "{:016X}",
+                         conf::HardwareConfig::getUniqueID());
+
+        SystemInfo systemInfo;
+
+        systemInfo.mutable_hardwareId().set(hardwareId.data(), hardwareId.size());
+        systemInfo.mutable_model().set(projectConfig.DeviceName.data(), projectConfig.DeviceName.size());
+        systemInfo.mutable_manufacturer().set(projectConfig.ManufacturerName.data(),
+                                                      projectConfig.ManufacturerName.size());
+
+        systemInfo.mutable_firmwareVersion().set_major(projectConfig.VersionMajor);
+        systemInfo.mutable_firmwareVersion().set_minor(projectConfig.VersionMinor);
+        systemInfo.mutable_firmwareVersion().set_patch(projectConfig.VersionPatch);
+
+        systemInfo.mutable_hardwareVersion().set_major(projectConfig.HardwareVersionMajor);
+        systemInfo.mutable_hardwareVersion().set_minor(projectConfig.HardwareVersionMinor);
+        systemInfo.mutable_hardwareVersion().set_patch(projectConfig.HardwareVersionPatch);
+
+        return systemInfo;
+    }
 
     err_t WifiSubsystem::closeSession(connected_session_t* session) {
         if (session == nullptr) {
@@ -516,9 +550,39 @@ namespace kilight::com {
             session->clientPCB = nullptr;
         }
 
-        session->receiveLength = 0;
-        session->sendLength = 0;
+        session->writeBuffer.clear();
+        session->readBuffer.clear();
         session->inUse = false;
         return err;
+    }
+
+    void WifiSubsystem::queueReply(connected_session_t& session, Response const& response) {
+        uint32_t const size = response.serialized_size();
+
+        assert(size < std::numeric_limits<uint8_t>::max());
+
+        if (session.writeBuffer.get_available_size() < size + 1) {
+            WARN("Insufficient send buffer space for reply (need {} bytes, have {} bytes)",
+                 size + 1,
+                 session.writeBuffer.get_available_size());
+            return;
+        }
+        session.writeBuffer.push(static_cast<uint8_t>(size));
+
+        if (EmbeddedProto::Error const errorCode = response.serialize(session.writeBuffer);
+            errorCode != EmbeddedProto::Error::NO_ERRORS) {
+            ERROR("Error serializing response: {}", static_cast<uint8_t>(errorCode));
+            session.writeBuffer.clear();
+        }
+    }
+
+    void WifiSubsystem::queueSystemInfoReply(connected_session_t& session) {
+        // Since it's a somewhat heavy operation and the data never changes,
+        // just store it statically after the first time
+        static SystemInfo const systemInfoResponse = buildSystemInfo();
+        DEBUG("Processing system info request");
+        Response response;
+        response.set_systemInfo(systemInfoResponse);
+        queueReply(session, response);
     }
 }
