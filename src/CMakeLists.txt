@@ -51,6 +51,8 @@ add_executable(kilight-firmware
         kilight/storage/StorageSubsystem.h
         kilight/storage/StorageSubsystem.cpp
         kilight/com/wifi_data.h
+        kilight/ui/UserInterfaceSubsystem.h
+        kilight/ui/UserInterfaceSubsystem.cpp
 )
 
 target_compile_options(kilight-firmware PRIVATE

@@ -67,12 +67,34 @@ namespace kilight::hw {
         gpio_set_dir(gpioNumber, output);
     }
 
+    void GPIOWrapper::setPull(uint8_t const gpioNumber, GPIOPullDirection const direction) {
+        switch (direction) {
+        using enum GPIOPullDirection;
+        case None:
+            gpio_disable_pulls(gpioNumber);
+            break;
+
+        case PullUp:
+            gpio_pull_up(gpioNumber);
+            break;
+
+        case PullDown:
+            gpio_pull_down(gpioNumber);
+            break;
+        }
+    }
+
+
     void GPIOWrapper::write(uint8_t const gpioNumber, bool const val) {
         gpio_put(gpioNumber, val);
     }
 
     bool GPIOWrapper::read(uint8_t const gpioNumber) {
         return gpio_get(gpioNumber);
+    }
+
+    void GPIOWrapper::toggle(uint8_t const gpioNumber) {
+        gpioc_bit_out_xor(gpioNumber);
     }
 
     void GPIOWrapper::enablePWM(uint8_t const gpioNumber,

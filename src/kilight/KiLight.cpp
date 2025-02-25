@@ -28,9 +28,10 @@ namespace kilight {
     KiLight::KiLight() :
         Program(),
         m_storageSubsystem(subsystems()),
-        m_wifiSubsystem(subsystems(), &m_storageSubsystem),
+        m_userInterfaceSubsystem(subsystems()),
         m_oneWireSubsystem(subsystems()),
-        m_lightSubsystem(subsystems(), &m_wifiSubsystem){
+        m_wifiSubsystem(subsystems(), &m_storageSubsystem),
+        m_lightSubsystem(subsystems(), &m_storageSubsystem, &m_wifiSubsystem) {
     }
 
     LogSink const* KiLight::logSink() const {

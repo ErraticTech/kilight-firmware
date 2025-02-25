@@ -8,9 +8,11 @@
 #include <bit>
 #include <cstring>
 #include <array>
+#include <boot/picoboot_constants.h>
 
 #include <pico/flash.h>
 #include <hardware/flash.h>
+#include <pico/bootrom.h>
 
 #include "kilight/conf/WifiConfig.h"
 #include "kilight/util/MathUtil.h"
@@ -94,6 +96,17 @@ namespace kilight::storage {
                                     [this](Alarm const&) {
                                         m_saveCheckPending = true;
                                     });
+    }
+
+    void StorageSubsystem::clearAndReboot() {
+        flash_safe_execute([](void *) {
+                               flash_range_erase(SaveDataFlashOffset, SaveDataTotalAvailableSize);
+                           },
+                           nullptr,
+                           UINT32_MAX);
+        INFO("Cleared storage. Rebooting...");
+        rom_reboot(REBOOT2_FLAG_REBOOT_TYPE_NORMAL | REBOOT2_FLAG_NO_RETURN_ON_SUCCESS, 1, 0, 0);
+        __builtin_unreachable();
     }
 
     void StorageSubsystem::writePendingData() {

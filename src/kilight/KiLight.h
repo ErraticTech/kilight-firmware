@@ -16,6 +16,7 @@
 #include "kilight/com/WifiSubsystem.h"
 #include "kilight/hw/OneWireSubsystem.h"
 #include "kilight/output/LightSubsystem.h"
+#include "kilight/ui/UserInterfaceSubsystem.h"
 
 namespace kilight {
 
@@ -51,9 +52,11 @@ namespace kilight {
 
         storage::StorageSubsystem m_storageSubsystem;
 
-        com::WifiSubsystem m_wifiSubsystem;
+        ui::UserInterfaceSubsystem m_userInterfaceSubsystem;
 
         hw::OneWireSubsystem m_oneWireSubsystem;
+
+        com::WifiSubsystem m_wifiSubsystem;
 
         output::LightSubsystem m_lightSubsystem;
     };

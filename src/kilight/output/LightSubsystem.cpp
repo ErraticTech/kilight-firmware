@@ -17,13 +17,18 @@ using kilight::com::WifiSubsystem;
 using kilight::com::state_data_t;
 using kilight::com::write_request_t;
 using kilight::com::OutputIdentifier;
+using kilight::storage::StorageSubsystem;
+using kilight::storage::save_data_t;
 
 namespace kilight::output {
     LightSubsystem::LightSubsystem(SubsystemList* const list,
+                                   StorageSubsystem * const storageSubsystem,
                                    WifiSubsystem* const wifiSubsystem) :
         Subsystem(list),
-        m_wifi(wifiSubsystem) {
+        m_wifi(wifiSubsystem),
+        m_storage(storageSubsystem) {
         assert(m_wifi != nullptr);
+        assert(m_storage != nullptr);
     }
 
     void LightSubsystem::initialize() {
@@ -31,7 +36,7 @@ namespace kilight::output {
     }
 
     void LightSubsystem::setUp() {
-        m_outputA.pending = output_data_t{};
+        m_outputA.pending = StorageSubsystem::saveData().outputA;
 
         m_wifi->setWriteRequestCallback([this](write_request_t const& writeRequest) {
             if (writeRequest.outputId == OutputIdentifier::OutputA) {
@@ -44,6 +49,10 @@ namespace kilight::output {
                 state.outputA.color = newValue.color;
                 state.outputA.brightness = newValue.brightnessMultiplier;
                 state.outputA.on = newValue.powerOn;
+            });
+
+            m_storage->updatePendingData([&newValue](save_data_t & saveData) {
+                saveData.outputA = newValue;
             });
         };
     }

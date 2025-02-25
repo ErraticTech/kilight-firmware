@@ -42,6 +42,9 @@ namespace kilight::storage {
             updateFunction(m_pendingSaveData);
         }
 
+        [[noreturn]]
+        static void clearAndReboot();
+
     private:
         core::Alarm m_saveCheckAlarm;
 

@@ -14,6 +14,7 @@
 #include "kilight/core/CriticalSection.h"
 #include "kilight/hw/SystemPins.h"
 #include "kilight/output/output_data.h"
+#include "kilight/storage/StorageSubsystem.h"
 
 namespace kilight::output {
 
@@ -23,6 +24,7 @@ namespace kilight::output {
         static constexpr uint32_t FadeTickMs = 5;
 
         LightSubsystem(mpf::core::SubsystemList * list,
+                       storage::StorageSubsystem * storageSubsystem,
                        com::WifiSubsystem * wifiSubsystem);
 
         ~LightSubsystem() override = default;
@@ -74,6 +76,8 @@ namespace kilight::output {
         }
 
         com::WifiSubsystem * const m_wifi;
+
+        storage::StorageSubsystem * const m_storage;
 
         core::CriticalSection m_criticalSection;
 

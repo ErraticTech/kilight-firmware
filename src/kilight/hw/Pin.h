@@ -34,6 +34,12 @@ namespace kilight::hw {
         EdgeRising = 1U << 3U
     };
 
+    enum class GPIOPullDirection {
+        None,
+        PullUp,
+        PullDown
+    };
+
     constexpr GPIOInterruptTrigger operator|(GPIOInterruptTrigger const first, GPIOInterruptTrigger const second) {
         return static_cast<GPIOInterruptTrigger>(static_cast<uint32_t>(first) | static_cast<uint32_t>(second));
     }
@@ -54,10 +60,14 @@ namespace kilight::hw {
 
         static void setDirection(uint8_t gpioNumber, bool output);
 
+        static void setPull(uint8_t gpioNumber, GPIOPullDirection direction);
+
         static void write(uint8_t gpioNumber, bool val);
 
         [[nodiscard]]
         static bool read(uint8_t gpioNumber);
+
+        static void toggle(uint8_t gpioNumber);
 
         static void enablePWM(uint8_t gpioNumber, uint32_t frequencyHz, uint16_t top);
 
@@ -106,6 +116,22 @@ namespace kilight::hw {
             setDirection(false);
         }
 
+        static void setPull(GPIOPullDirection const direction) {
+            GPIOWrapper::setPull(gpioNumber, direction);
+        }
+
+        static void setPullUp() {
+            setPull(GPIOPullDirection::PullUp);
+        }
+
+        static void setPullDown() {
+            setPull(GPIOPullDirection::PullDown);
+        }
+
+        static void setPullNone() {
+            setPull(GPIOPullDirection::None);
+        }
+
         [[nodiscard]]
         static bool read() {
             return GPIOWrapper::read(gpioNumber);
@@ -113,6 +139,10 @@ namespace kilight::hw {
 
         static void write(bool const val = true) {
             return GPIOWrapper::write(gpioNumber, val);
+        }
+
+        static void toggle() {
+            GPIOWrapper::toggle(gpioNumber);
         }
 
         static void setLow() {
