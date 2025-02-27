@@ -18,6 +18,10 @@ namespace kilight::storage {
 
         output::output_data_t outputA = {};
 
+        #ifdef KILIGHT_HAS_OUTPUT_B
+        output::output_data_t outputB = {};
+        #endif
+
         constexpr auto operator<=>(save_data_t const &other) const noexcept = default;
     };
 }

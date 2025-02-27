@@ -54,6 +54,15 @@ namespace kilight::output {
 
         constexpr auto operator<=>(rgbcw_color_base_t const& other) const noexcept = default;
 
+        rgbcw_color_base_t& operator=(protocol::Color const& protocolColor) {
+            red = static_cast<uint8_t>(protocolColor.red());
+            green = static_cast<uint8_t>(protocolColor.green());
+            blue = static_cast<uint8_t>(protocolColor.blue());
+            coldWhite = static_cast<uint8_t>(protocolColor.coldWhite());
+            warmWhite = static_cast<uint8_t>(protocolColor.warmWhite());
+            return *this;
+        }
+
         template <typename OtherColorT>
         rgbcw_color_base_t& operator=(OtherColorT const& other) {
             red = other.red;

@@ -28,6 +28,21 @@
 #define KILIGHT_I2C_BAUD_RATE 400000
 #endif
 
+// Number of outputs. KiLight Mono only has one
+#ifndef KILIGHT_NUMBER_OF_OUTPUTS
+#define KILIGHT_NUMBER_OF_OUTPUTS 1
+#endif
+
+// Defined if the board has more than one output. KiLight Mono only has one, so it shouldn't be defined
+#if KILIGHT_NUMBER_OF_OUTPUTS > 1 && !defined(KILIGHT_HAS_OUTPUT_B)
+#define KILIGHT_HAS_OUTPUT_B
+#endif
+
+// Clock divider for ADC samples
+#ifndef KILIGHT_ADC_CLKDIV
+#define KILIGHT_ADC_CLKDIV 2
+#endif
+
 #define PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE CYW43_COUNTRY_USA
 
 // For board detection

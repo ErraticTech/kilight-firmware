@@ -18,6 +18,7 @@
 
 #include <kilight/protocol/Request.h>
 #include <kilight/protocol/Response.h>
+#include <kilight/protocol/OutputIdentifier.h>
 
 #include "kilight/com/ServerReadBuffer.h"
 #include "kilight/conf/HardwareConfig.h"
@@ -65,6 +66,18 @@ namespace kilight::com {
         void updateStateData(UpdateFuncT&& updateFunc) {
             cyw43_arch_lwip_begin();
             updateFunc(m_stateData);
+            cyw43_arch_lwip_end();
+        }
+
+        template <typename UpdateFuncT>
+        void updateOutputStateData(protocol::OutputIdentifier const outputId, UpdateFuncT&& updateFunc) {
+            cyw43_arch_lwip_begin();
+            if (outputId == protocol::OutputIdentifier::OutputA) {
+                updateFunc(m_stateData.mutable_outputA());
+            }
+            if (outputId == protocol::OutputIdentifier::OutputB) {
+                updateFunc(m_stateData.mutable_outputB());
+            }
             cyw43_arch_lwip_end();
         }
 

@@ -54,6 +54,10 @@ add_executable(kilight-firmware
         kilight/ui/UserInterfaceSubsystem.cpp
         kilight/com/ServerWriteBuffer.h
         kilight/com/ServerReadBuffer.h
+        kilight/status/CurrentMonitorSubsystem.cpp
+        kilight/status/CurrentMonitorSubsystem.h
+        kilight/status/ThermalSubsystem.h
+        kilight/status/ThermalSubsystem.cpp
 )
 
 target_compile_options(kilight-firmware PRIVATE

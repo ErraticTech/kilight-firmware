@@ -344,11 +344,11 @@ namespace kilight::com {
         case GETDATA: {
             switch (request.get_getData()) {
 
-            case GetData::SystemState:
+            case GetData::GetSystemState:
                 queueStateReply(session);
                 break;
 
-            case GetData::SystemInfo:
+            case GetData::GetSystemInfo:
                 queueSystemInfoReply(session);
                 break;
 

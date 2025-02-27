@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <atomic>
-
 #include <mpf/core/Program.h>
 #include <mpf/core/Logging.h>
 
@@ -16,6 +14,8 @@
 #include "kilight/com/WifiSubsystem.h"
 #include "kilight/hw/OneWireSubsystem.h"
 #include "kilight/output/LightSubsystem.h"
+#include "kilight/status/CurrentMonitorSubsystem.h"
+#include "kilight/status/ThermalSubsystem.h"
 #include "kilight/ui/UserInterfaceSubsystem.h"
 
 namespace kilight {
@@ -59,6 +59,10 @@ namespace kilight {
         com::WifiSubsystem m_wifiSubsystem;
 
         output::LightSubsystem m_lightSubsystem;
+
+        status::CurrentMonitorSubsystem m_currentMonitorSubsystem;
+
+        status::ThermalSubsystem m_thermalSubsystem;
     };
 
 } // namespace kilight

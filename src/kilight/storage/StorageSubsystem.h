@@ -9,6 +9,8 @@
 #include <mpf/core/Logging.h>
 #include <mpf/core/Subsystem.h>
 
+#include <kilight/protocol/OutputIdentifier.h>
+
 #include "kilight/core/Alarm.h"
 #include "kilight/storage/save_data.h"
 #include "kilight/core/CriticalSection.h"
@@ -40,6 +42,17 @@ namespace kilight::storage {
         template<typename FuncT>
         void updatePendingData(FuncT && updateFunction) {
             updateFunction(m_pendingSaveData);
+        }
+
+        template <typename UpdateFuncT>
+        void updatePendingOutputData(protocol::OutputIdentifier const outputId, UpdateFuncT&& updateFunc) {
+            if (outputId == protocol::OutputIdentifier::OutputA) {
+                updateFunc(m_pendingSaveData.outputA);
+            } else if (outputId == protocol::OutputIdentifier::OutputB) {
+                #ifdef KILIGHT_HAS_OUTPUT_B
+                updateFunc(m_pendingSaveData.outputB);
+                #endif
+            }
         }
 
         [[noreturn]]
