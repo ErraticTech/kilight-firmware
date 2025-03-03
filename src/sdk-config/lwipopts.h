@@ -92,3 +92,6 @@
 #define PPP_DEBUG                   LWIP_DBG_OFF
 #define SLIP_DEBUG                  LWIP_DBG_OFF
 #define DHCP_DEBUG                  LWIP_DBG_OFF
+
+// We only have one IF and so don't need routing etc. code
+#define LWIP_SINGLE_NETIF 1

@@ -15,6 +15,13 @@
 
 namespace kilight::ui {
 
+    enum class NetworkStatusLEDState : uint8_t {
+        Off = 0,
+        Searching = 1,
+        Connecting = 2,
+        Connected = 3
+    };
+
     class UserInterfaceSubsystem final : public mpf::core::Subsystem {
         LOGGER(UI);
     public:
@@ -25,13 +32,6 @@ namespace kilight::ui {
         static constexpr uint32_t NetworkActivityBlinkMs = 50;
 
         static constexpr uint64_t ClearHoldTimeUs = 5000 * 1000;
-
-        enum class NetworkStatusLEDState : uint8_t {
-            Off = 0,
-            Searching = 1,
-            Connecting = 2,
-            Connected = 3
-        };
 
         explicit UserInterfaceSubsystem(mpf::core::SubsystemList * list);
 

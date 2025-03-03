@@ -21,8 +21,7 @@
 #include "kilight/conf/ProjectConfig.h"
 
 using mpf::util::StringUtil;
-using kilight::conf::getWifiConfig;
-using kilight::storage::StorageSubsystem;
+
 using kilight::protocol::SystemState;
 using kilight::protocol::Request;
 using kilight::protocol::Response;
@@ -31,11 +30,21 @@ using kilight::protocol::CommandResult;
 using kilight::protocol::GetData;
 using kilight::protocol::WriteOutput;
 
+using kilight::conf::getWifiConfig;
+using kilight::storage::StorageSubsystem;
+using kilight::ui::UserInterfaceSubsystem;
+using kilight::ui::NetworkStatusLEDState;
+
 namespace kilight::com {
-    WifiSubsystem::WifiSubsystem(mpf::core::SubsystemList* const list, StorageSubsystem* const storage) :
+
+    WifiSubsystem::WifiSubsystem(mpf::core::SubsystemList* const list,
+        StorageSubsystem* const storage,
+        UserInterfaceSubsystem* const ui) :
         Subsystem(list),
-        m_storage(storage) {
+        m_storage(storage),
+        m_ui(ui) {
         assert(m_storage != nullptr);
+        assert(m_ui != nullptr);
         instance = this;
     }
 
@@ -52,13 +61,13 @@ namespace kilight::com {
 
         cyw43_wifi_pm(&cyw43_state, CYW43_NONE_PM);
 
-        netif_set_hostname(netif_list, m_hostname);
+        netif_set_hostname(netif_default, m_hostname);
 
         mdns_resp_init();
 
-        mdns_resp_add_netif(netif_list, m_hostname);
+        mdns_resp_add_netif(netif_default, m_hostname);
 
-        mdns_resp_add_service(netif_list,
+        mdns_resp_add_service(netif_default,
                               m_hostname,
                               "_kilight",
                               DNSSD_PROTO_TCP,
@@ -124,8 +133,13 @@ namespace kilight::com {
         return rssi;
     }
 
+    char const* WifiSubsystem::ipAddress() {
+        return ip4addr_ntoa(netif_ip4_addr(netif_default));
+    }
+
     void WifiSubsystem::retryConnectionWait() {
         m_stateAfterWait = State::Disconnected;
+        m_ui->setNetworkStatusLedState(NetworkStatusLEDState::Off);
         m_state = State::Waiting;
         m_alarm.setTimeout(WifiConnectRetryMsec,
                            [this](core::Alarm const&) {
@@ -157,11 +171,13 @@ namespace kilight::com {
 
         if (int const errorCode = cyw43_arch_wifi_connect_async(m_ssidBuff.data(),
                                                                 m_passwordBuff.data(),
-                                                                CYW43_AUTH_WPA2_AES_PSK)) {
+                                                                CYW43_AUTH_WPA3_WPA2_AES_PSK)) {
             panic("Failed to start connection to wifi, error code: %d", errorCode);
         }
 
         DEBUG("Connecting to \"{}\"...", m_ssid);
+
+        m_ui->setNetworkStatusLedState(NetworkStatusLEDState::Searching);
 
         m_lastLinkStatus = INT_MAX;
 
@@ -181,21 +197,25 @@ namespace kilight::com {
         m_lastLinkStatus = linkStatus;
 
         switch (linkStatus) {
+
         case CYW43_LINK_DOWN:
             DEBUG("Wifi link down");
             break;
 
         case CYW43_LINK_JOIN:
             DEBUG("Joining wifi in progress...");
+            m_ui->setNetworkStatusLedState(NetworkStatusLEDState::Searching);
             break;
 
         case CYW43_LINK_NOIP:
             DEBUG("Connected to wifi, no IP address yet, RSSI: {}", rssi());
+            m_ui->setNetworkStatusLedState(NetworkStatusLEDState::Connecting);
             break;
 
         case CYW43_LINK_UP:
-            DEBUG("Connected to wifi, IP address: {}, RSSI: {}", ip4addr_ntoa(netif_ip4_addr(netif_list)), rssi());
-            mdns_resp_restart(netif_list);
+            DEBUG("Connected to wifi, IP address: {}, RSSI: {}", ipAddress(), rssi());
+            mdns_resp_restart(netif_default);
+            m_ui->setNetworkStatusLedState(NetworkStatusLEDState::Connected);
             m_state = State::Connected;
             break;
 
@@ -247,7 +267,7 @@ namespace kilight::com {
                        return self->acceptCallback(clientPCB, innerError);
                    });
 
-        INFO("Server listening at {}:{}", ip4addr_ntoa(netif_ip4_addr(netif_list)), getWifiConfig().ListenPort);
+        INFO("Server listening at {}:{}", ipAddress(), getWifiConfig().ListenPort);
 
         m_state = State::PreIdle;
     }
@@ -499,6 +519,8 @@ namespace kilight::com {
         if (m_state == State::Idle) {
             m_state = State::ProcessClientData;
         }
+
+        m_ui->blinkForNetworkActivity();
 
         return ERR_OK;
     }

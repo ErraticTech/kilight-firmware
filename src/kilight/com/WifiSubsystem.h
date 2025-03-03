@@ -25,6 +25,7 @@
 #include "kilight/core/Alarm.h"
 #include "kilight/storage/StorageSubsystem.h"
 #include "kilight/com/ServerWriteBuffer.h"
+#include "kilight/ui/UserInterfaceSubsystem.h"
 
 #define KILIGHT_FIXED_STRING_BUFFER(name, templateString) \
         char name[sizeof(templateString)] { templateString };
@@ -41,7 +42,7 @@ namespace kilight::com {
 
         static constexpr uint16_t BufferSize = 2048;
 
-        static constexpr size_t MaxConnections = 4;
+        static constexpr size_t MaxConnections = 8;
 
         static constexpr std::format_string<uint64_t> HardwareIdFormatString = "hwid={:016X}";
 
@@ -50,7 +51,12 @@ namespace kilight::com {
         [[nodiscard]]
         static int32_t rssi();
 
-        WifiSubsystem(mpf::core::SubsystemList* list, storage::StorageSubsystem* storage);
+        [[nodiscard]]
+        static char const * ipAddress();
+
+        WifiSubsystem(mpf::core::SubsystemList* list,
+                      storage::StorageSubsystem* storage,
+                      ui::UserInterfaceSubsystem* ui);
 
         void setUp() override;
 
@@ -102,9 +108,9 @@ namespace kilight::com {
         struct connected_session_t {
             tcp_pcb* clientPCB = nullptr;
 
-            ServerReadBuffer<BufferSize> readBuffer {};
+            ServerReadBuffer<BufferSize> readBuffer{};
 
-            ServerWriteBuffer<BufferSize> writeBuffer {};
+            ServerWriteBuffer<BufferSize> writeBuffer{};
 
             bool volatile inUse = false;
 
@@ -117,7 +123,7 @@ namespace kilight::com {
 
         static err_t closeSession(connected_session_t* session);
 
-        static void queueReply(connected_session_t& session, protocol::Response const & response);
+        static void queueReply(connected_session_t& session, protocol::Response const& response);
 
         static void queueSystemInfoReply(connected_session_t& session);
 
@@ -129,6 +135,8 @@ namespace kilight::com {
         State m_stateAfterWait = State::Invalid;
 
         storage::StorageSubsystem* const m_storage;
+
+        ui::UserInterfaceSubsystem* const m_ui;
 
         std::array<char, MaxSSIDLength + 1> m_ssidBuff{};
 
@@ -181,7 +189,7 @@ namespace kilight::com {
 
         void queueStateReply(connected_session_t& session) const;
 
-        void processWrite(connected_session_t& session, protocol::WriteOutput const & writeRequest) const;
+        void processWrite(connected_session_t& session, protocol::WriteOutput const& writeRequest) const;
 
         err_t acceptCallback(tcp_pcb* clientPCB, err_t error);
 

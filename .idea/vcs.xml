@@ -3,6 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/lib/kilight-protocol" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/kilight-protocol/lib/EmbeddedProto" vcs="" />
     <mapping directory="$PROJECT_DIR$/lib/micro-program-framework" vcs="Git" />
   </component>
 </project>

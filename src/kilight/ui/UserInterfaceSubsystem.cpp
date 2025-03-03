@@ -51,7 +51,7 @@ namespace kilight::ui {
         }
     }
 
-    UserInterfaceSubsystem::NetworkStatusLEDState UserInterfaceSubsystem::networkStatusLedState() const {
+    NetworkStatusLEDState UserInterfaceSubsystem::networkStatusLedState() const {
         return m_networkStatusLedState;
     }
 
