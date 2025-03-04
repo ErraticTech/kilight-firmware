@@ -58,7 +58,7 @@ namespace kilight::hw {
         }
 
     private:
-        uint64_t m_value : 64 = 0;
+        uint64_t volatile m_value : 64 = 0;
     };
 
 }

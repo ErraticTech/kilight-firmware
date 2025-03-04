@@ -171,6 +171,7 @@ namespace kilight::status {
                     m_wifi->updateStateData([this](SystemState& state) {
                         state.mutable_temperatures().set_driver(m_driverTemperature);
                     });
+                    DEBUG("Driver temperature: {:.2f} C", static_cast<float>(m_driverTemperature) / 100);
                 });
             if (registered) {
                 m_driverCallbackRegistered = true;
@@ -178,7 +179,20 @@ namespace kilight::status {
             }
         }
 
-        // TODO: Optional power supply thermometer detection and callback
+        if (!m_powerSupplyCallbackRegistered) {
+            bool const registered = m_oneWire->registerPowerSupplyTemperatureUpdateCallback(
+                [this](int16_t const newTemperature) {
+                    m_powerSupplyTemperature = newTemperature;
+                    m_wifi->updateStateData([this](SystemState& state) {
+                        state.mutable_temperatures().set_powerSupply(m_powerSupplyTemperature);
+                    });
+                    DEBUG("Power Supply temperature: {:.2f} C", static_cast<float>(m_powerSupplyTemperature) / 100);
+                });
+            if (registered) {
+                m_powerSupplyCallbackRegistered = true;
+                DEBUG("Registered power supply thermometer callback");
+            }
+        }
 
         // TODO: Optional light thermometer detection and callback
 

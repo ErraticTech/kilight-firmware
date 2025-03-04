@@ -52,9 +52,9 @@ namespace kilight {
 
         storage::StorageSubsystem m_storageSubsystem;
 
-        ui::UserInterfaceSubsystem m_userInterfaceSubsystem;
-
         hw::OneWireSubsystem m_oneWireSubsystem;
+
+        ui::UserInterfaceSubsystem m_userInterfaceSubsystem;
 
         com::WifiSubsystem m_wifiSubsystem;
 

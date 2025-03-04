@@ -58,6 +58,10 @@ namespace kilight::storage {
         [[noreturn]]
         static void clearAndReboot();
 
+
+        [[noreturn]]
+        void saveAndReboot();
+
     private:
         core::Alarm m_saveCheckAlarm;
 

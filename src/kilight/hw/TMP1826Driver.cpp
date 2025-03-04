@@ -57,11 +57,11 @@ namespace kilight::hw {
             TRACE("Calculated Last CRC: {} / Provided CRC: {}", lastCRC, m_scratchpad.lastCRC);
 
             if (firstCRC != m_scratchpad.firstCRC || lastCRC != m_scratchpad.lastCRC) {
-                DEBUG("On-Board temperature CRC mismatch, retrying");
+                DEBUG("Temperature CRC mismatch, retrying");
                 return false;
             }
 
-            DEBUG("On-Board temperature: {:.2f} C", static_cast<float>(m_scratchpad.temperature) / 128);
+            TRACE("Temperature: {:.2f} C", static_cast<float>(m_scratchpad.temperature) / 128);
 
             TRACE("Scratchpad Config - conversionMode: {} / averageEightConversions: {} / "
                   "alertPinMode: {} / useLongConversionTime: {} / useSixteenBitTemperatureFormat: {}",

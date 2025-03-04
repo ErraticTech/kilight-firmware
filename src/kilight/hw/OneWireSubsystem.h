@@ -16,6 +16,7 @@
 #include "kilight/hw/DS2485Driver.h"
 #include "kilight/hw/DS18B20Driver.h"
 #include "kilight/hw/TMP1826Driver.h"
+#include "kilight/storage/StorageSubsystem.h"
 
 namespace kilight::hw {
 
@@ -58,9 +59,13 @@ namespace kilight::hw {
 
         static constexpr uint64_t OnboardDeviceOnlyReadDelayUs = 1000 * 1000;
 
+        #ifdef KILIGHT_HAS_OUTPUT_B
+        static constexpr size_t MaxExternalDevicesToFind = 3;
+        #else
         static constexpr size_t MaxExternalDevicesToFind = 2;
+        #endif
 
-        explicit OneWireSubsystem(mpf::core::SubsystemList * list);
+        explicit OneWireSubsystem(mpf::core::SubsystemList * list, storage::StorageSubsystem * storage);
 
         ~OneWireSubsystem() override = default;
 
@@ -70,6 +75,8 @@ namespace kilight::hw {
         bool hasWork() const override;
 
         void work() override;
+
+        void requestSetPowerSupplyThermometerAddress();
 
         template<typename FuncT>
         bool registerTemperatureUpdateCallback(onewire_address_t const deviceAddress, FuncT && callback) {
@@ -91,10 +98,41 @@ namespace kilight::hw {
             return false;
         }
 
+        template<typename FuncT>
+        bool registerPowerSupplyTemperatureUpdateCallback(FuncT && callback) {
+            if (m_powerSupplyThermometer != nullptr) {
+                m_powerSupplyThermometer->setOnTemperatureReadyCallback(std::forward<FuncT>(callback));
+                return true;
+            }
+            return false;
+        }
+
+        template<typename FuncT>
+        bool registerOutputATemperatureUpdateCallback(FuncT && callback) {
+            if (m_outputAThermometer != nullptr) {
+                m_outputAThermometer->setOnTemperatureReadyCallback(std::forward<FuncT>(callback));
+                return true;
+            }
+            return false;
+        }
+
+        #ifdef KILIGHT_HAS_OUTPUT_B
+        template<typename FuncT>
+        bool registerOutputBTemperatureUpdateCallback(FuncT && callback) {
+            if (m_outputB != nullptr) {
+                m_outputB->setOnTemperatureReadyCallback(std::forward<FuncT>(callback));
+                return true;
+            }
+            return false;
+        }
+        #endif
+
     private:
         State volatile m_state = State::Invalid;
 
         State volatile m_stateAfterWait = State::Invalid;
+
+        storage::StorageSubsystem * const m_storage;
 
         DS2485Driver m_driver;
 
@@ -115,9 +153,20 @@ namespace kilight::hw {
         std::array<DS18B20Driver, MaxExternalDevicesToFind> m_foundExternalDevices {
             DS18B20Driver(&m_driver),
             DS18B20Driver(&m_driver)
+            #ifdef KILIGHT_HAS_OUTPUT_B
+            ,DS18B20Driver(&m_driver)
+            #endif
         };
 
         size_t m_currentExternalDevice = 0;
+
+        DS18B20Driver * m_powerSupplyThermometer = nullptr;
+
+        DS18B20Driver * m_outputAThermometer = nullptr;
+
+        #ifdef KILIGHT_HAS_OUTPUT_B
+        DS18B20Driver * m_outputBThermometer = nullptr;
+        #endif
 
         void wait(State stateAfterWait, uint64_t waitTimeUs);
 
@@ -164,6 +213,8 @@ namespace kilight::hw {
         void requestTemperatureConversionStartState();
 
         void requestTemperatureConversionCompleteState();
+
+        void registerExternalOneWireDevice(onewire_address_t const & foundAddress);
 
     };
 

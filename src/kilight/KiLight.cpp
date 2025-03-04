@@ -28,8 +28,8 @@ namespace kilight {
     KiLight::KiLight() :
         Program(),
         m_storageSubsystem(subsystems()),
-        m_userInterfaceSubsystem(subsystems()),
-        m_oneWireSubsystem(subsystems()),
+        m_oneWireSubsystem(subsystems(), &m_storageSubsystem),
+        m_userInterfaceSubsystem(subsystems(), &m_oneWireSubsystem),
         m_wifiSubsystem(subsystems(), &m_storageSubsystem, &m_userInterfaceSubsystem),
         m_lightSubsystem(subsystems(), &m_storageSubsystem, &m_wifiSubsystem),
         m_currentMonitorSubsystem(subsystems(), &m_wifiSubsystem, &m_lightSubsystem),

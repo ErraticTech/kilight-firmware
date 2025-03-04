@@ -11,6 +11,8 @@
 #include <mpf/core/Logging.h>
 
 #include "kilight/core/Alarm.h"
+#include "kilight/hw/OneWireSubsystem.h"
+#include "kilight/hw/SystemPins.h"
 #include "kilight/storage/StorageSubsystem.h"
 
 namespace kilight::ui {
@@ -33,7 +35,11 @@ namespace kilight::ui {
 
         static constexpr uint64_t ClearHoldTimeUs = 5000 * 1000;
 
-        explicit UserInterfaceSubsystem(mpf::core::SubsystemList * list);
+        static constexpr uint64_t SetPowerSupplyThermometerAddressClickTimeoutUs = 1000 * 1000;
+
+        static constexpr uint8_t SetPowerSupplyThermometerAddressClickCount = 10;
+
+        explicit UserInterfaceSubsystem(mpf::core::SubsystemList * list, hw::OneWireSubsystem * oneWire);
 
         void initialize() override;
 
@@ -52,17 +58,33 @@ namespace kilight::ui {
         void blinkForNetworkActivity();
 
     private:
+        using StatusLED = hw::SystemPins::StatusLED;
+
+        using ActivityLED = hw::SystemPins::ActivityLED;
+
+        using ClearButton = hw::SystemPins::ClearButton;
+
+        hw::OneWireSubsystem * const m_oneWire;
 
         core::Alarm m_alarm;
 
-        NetworkStatusLEDState volatile m_networkStatusLedState = NetworkStatusLEDState::Off;
+        core::Alarm m_clearButtonClickAlarm;
 
-        bool volatile m_clearButtonPressed = false;
+        std::atomic<NetworkStatusLEDState> m_networkStatusLedState = NetworkStatusLEDState::Off;
 
-        uint64_t volatile m_clearButtonPressStart = 0;
+        std::atomic_flag m_clearButtonPressedFlag = false;
+
+        std::atomic_uint64_t m_clearButtonPressStart = 0;
+
+        std::atomic_uint m_setPowerSupplyThermometerAddressClicks = 0;
 
         [[nodiscard]]
         bool shouldTriggerClear() const;
+
+        [[nodiscard]]
+        bool shouldTriggerSetPowerSupplyThermometerAddress() const;
+
+        void onClearButtonInterrupt(uint8_t gpio, hw::GPIOInterruptTrigger trigger);
     };
 
 }

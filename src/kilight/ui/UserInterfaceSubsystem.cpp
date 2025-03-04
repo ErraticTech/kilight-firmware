@@ -5,49 +5,52 @@
  */
 #include "kilight/ui/UserInterfaceSubsystem.h"
 
-#include "kilight/hw/SystemPins.h"
+#include <functional>
+#include <cassert>
 
-using kilight::hw::SystemPins;
 using kilight::hw::GPIOInterruptTrigger;
 using kilight::storage::StorageSubsystem;
+using kilight::core::Alarm;
 
 namespace kilight::ui {
-    UserInterfaceSubsystem::UserInterfaceSubsystem(mpf::core::SubsystemList* const list) :
-        Subsystem(list) {
+    UserInterfaceSubsystem::UserInterfaceSubsystem(mpf::core::SubsystemList* const list,
+                                                   hw::OneWireSubsystem* const oneWire) :
+        Subsystem(list),
+        m_oneWire(oneWire) {
+        assert(m_oneWire != nullptr);
     }
 
     void UserInterfaceSubsystem::initialize() {
-        SystemPins::StatusLED::setOutput();
-        SystemPins::ActivityLED::setOutput();
-        SystemPins::ClearButton::setInput();
-        SystemPins::ClearButton::setPullUp();
+        StatusLED::setOutput();
+        ActivityLED::setOutput();
+        ClearButton::setInput();
+        ClearButton::setPullUp();
     }
 
     void UserInterfaceSubsystem::setUp() {
-        using enum GPIOInterruptTrigger;
-        if (!SystemPins::ClearButton::read()) {
+        if (!ClearButton::read()) {
             m_clearButtonPressStart = time_us_64();
-            m_clearButtonPressed = true;
+            m_clearButtonPressedFlag.test_and_set();
         }
-        SystemPins::ClearButton::setInterrupt(EdgeFalling | EdgeRising,
-                                              [this](uint8_t, GPIOInterruptTrigger const trigger) {
-                                                  if (!m_clearButtonPressed && trigger == EdgeFalling) {
-                                                      m_clearButtonPressStart = time_us_64();
-                                                      m_clearButtonPressed = true;
-                                                  } else {
-                                                      m_clearButtonPressed = false;
-                                                  }
-                                              });
+        ClearButton::setInterrupt(GPIOInterruptTrigger::EdgeFalling | GPIOInterruptTrigger::EdgeRising,
+                                  std::bind_front(&UserInterfaceSubsystem::onClearButtonInterrupt, this));
     }
 
     bool UserInterfaceSubsystem::hasWork() const {
-        return shouldTriggerClear();
+        return shouldTriggerClear() || shouldTriggerSetPowerSupplyThermometerAddress();
     }
 
     void UserInterfaceSubsystem::work() {
         if (shouldTriggerClear()) {
             DEBUG("Clear button held, initiating settings clear...");
             StorageSubsystem::clearAndReboot();
+        }
+        if (shouldTriggerSetPowerSupplyThermometerAddress()) {
+            DEBUG("Clear button clicked {} times, attempting to register power supply thermometer address...",
+                  SetPowerSupplyThermometerAddressClickCount);
+            m_clearButtonClickAlarm.cancel();
+            m_setPowerSupplyThermometerAddressClicks = 0;
+            m_oneWire->requestSetPowerSupplyThermometerAddress();
         }
     }
 
@@ -65,32 +68,32 @@ namespace kilight::ui {
 
         case Searching:
             m_alarm.setTimeout(SlowBlinkIntervalMs,
-                               [](core::Alarm& alarm) {
-                                   SystemPins::StatusLED::toggle();
-                                   SystemPins::ActivityLED::write(false);
+                               [](Alarm& alarm) {
+                                   StatusLED::toggle();
+                                   ActivityLED::write(false);
                                    alarm.restart(SlowBlinkIntervalMs);
                                });
             break;
 
         case Connecting:
             m_alarm.setTimeout(FastBlinkIntervalMs,
-                               [](core::Alarm& alarm) {
-                                   SystemPins::StatusLED::toggle();
-                                   SystemPins::ActivityLED::write(false);
+                               [](Alarm& alarm) {
+                                   StatusLED::toggle();
+                                   ActivityLED::write(false);
                                    alarm.restart(FastBlinkIntervalMs);
                                });
             break;
 
         case Connected:
             m_alarm.cancel();
-            SystemPins::StatusLED::write(false);
-            SystemPins::ActivityLED::write(true);
+            StatusLED::write(false);
+            ActivityLED::write(true);
             break;
 
         default:
             m_alarm.cancel();
-            SystemPins::StatusLED::write(false);
-            SystemPins::ActivityLED::write(false);
+            StatusLED::write(false);
+            ActivityLED::write(false);
             break;
 
         }
@@ -101,16 +104,35 @@ namespace kilight::ui {
             return;
         }
 
-        SystemPins::ActivityLED::write(false);
+        ActivityLED::write(false);
         m_alarm.setTimeout(NetworkActivityBlinkMs,
-                           [this](core::Alarm const&) {
+                           [this](Alarm const&) {
                                if (m_networkStatusLedState == NetworkStatusLEDState::Connected) {
-                                   SystemPins::ActivityLED::write(true);
+                                   ActivityLED::write(true);
                                }
                            });
     }
 
     bool UserInterfaceSubsystem::shouldTriggerClear() const {
-        return m_clearButtonPressed && time_us_64() - m_clearButtonPressStart >= ClearHoldTimeUs;
+        return m_clearButtonPressedFlag.test() && time_us_64() - m_clearButtonPressStart >= ClearHoldTimeUs;
+    }
+
+    bool UserInterfaceSubsystem::shouldTriggerSetPowerSupplyThermometerAddress() const {
+        return m_setPowerSupplyThermometerAddressClicks >= SetPowerSupplyThermometerAddressClickCount;
+    }
+
+    void UserInterfaceSubsystem::onClearButtonInterrupt(uint8_t, GPIOInterruptTrigger const trigger) {
+        if (trigger == GPIOInterruptTrigger::EdgeFalling) {
+            if (!m_clearButtonPressedFlag.test_and_set()) {
+                m_clearButtonPressStart = time_us_64();
+            }
+        } else if (trigger == GPIOInterruptTrigger::EdgeRising) {
+            m_clearButtonClickAlarm.setTimeoutUs(SetPowerSupplyThermometerAddressClickTimeoutUs,
+                                                 [this](Alarm const &) {
+                                                     m_setPowerSupplyThermometerAddressClicks = 0;
+                                                 });
+            ++m_setPowerSupplyThermometerAddressClicks;
+            m_clearButtonPressedFlag.clear();
+        }
     }
 }

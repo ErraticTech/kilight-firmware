@@ -6,9 +6,16 @@
 
 #include "kilight/hw/OneWireSubsystem.h"
 
+#include <cassert>
+
+using kilight::storage::StorageSubsystem;
+
 namespace kilight::hw {
-    OneWireSubsystem::OneWireSubsystem(mpf::core::SubsystemList* const list) :
-        Subsystem(list) {
+    OneWireSubsystem::OneWireSubsystem(mpf::core::SubsystemList* const list,
+                                       storage::StorageSubsystem* const storage) :
+        Subsystem(list),
+        m_storage(storage) {
+        assert(m_storage != nullptr);
     }
 
     void OneWireSubsystem::setUp() {
@@ -113,6 +120,22 @@ namespace kilight::hw {
         default:
             break;
         }
+    }
+
+    void OneWireSubsystem::requestSetPowerSupplyThermometerAddress() {
+        if (m_externalDevicesFound != 1) {
+            WARN("To set the power supply thermometer address, only the power supply thermometer should be connected "
+                 "(disconnect any lights from the output)");
+            return;
+        }
+
+        m_powerSupplyThermometer = &m_foundExternalDevices[0];
+        auto const address = m_powerSupplyThermometer->address();
+        m_storage->updatePendingData([&address](storage::save_data_t & data) {
+            data.thermometerAddresses.powerSupply = address;
+        });
+        INFO("Set power supply thermometer address to {}, rebooting...", address);
+        m_storage->saveAndReboot();
     }
 
     void OneWireSubsystem::wait(State const stateAfterWait, uint64_t const waitTimeUs) {
@@ -251,11 +274,8 @@ namespace kilight::hw {
         if (foundAddress.deviceFamily() == TMP1826Driver::DeviceFamilyCode) {
             DEBUG("Found on-board OneWire device: {}", foundAddress);
             m_onboardDevice.setAddress(foundAddress);
-        } else if (m_externalDevicesFound < MaxExternalDevicesToFind &&
-            foundAddress.deviceFamily() == DS18B20Driver::DeviceFamilyCode) {
-            DEBUG("Found external OneWire device: {}", foundAddress);
-            m_foundExternalDevices[m_externalDevicesFound].setAddress(foundAddress);
-            ++m_externalDevicesFound;
+        } else if (foundAddress.deviceFamily() == DS18B20Driver::DeviceFamilyCode) {
+            registerExternalOneWireDevice(foundAddress);
         } else {
             WARN("Found unexpected OneWire device: {}", foundAddress);
         }
@@ -357,6 +377,28 @@ namespace kilight::hw {
         }
 
         wait(State::ReadDeviceScratchpadCommandStart, DS18B20Driver::ConversionTimeMs * 1000);
+    }
+
+    void OneWireSubsystem::registerExternalOneWireDevice(onewire_address_t const& foundAddress) {
+        if (m_externalDevicesFound >= MaxExternalDevicesToFind) {
+            return;
+        }
+        m_foundExternalDevices[m_externalDevicesFound].setAddress(foundAddress);
+
+        if (StorageSubsystem::saveData().thermometerAddresses.powerSupply) {
+            if (foundAddress == StorageSubsystem::saveData().thermometerAddresses.powerSupply) {
+                m_powerSupplyThermometer = &m_foundExternalDevices[m_externalDevicesFound];
+                DEBUG("Found power supply OneWire device: {}", foundAddress);
+            } else {
+                m_outputAThermometer = &m_foundExternalDevices[m_externalDevicesFound];
+                DEBUG("Found Output A OneWire device: {}", m_outputAThermometer->address());
+                // Auto-detection of Output B will be handled in a later version of the hardware/firmware
+            }
+        } else {
+            DEBUG("Found external OneWire device: {}", foundAddress);
+        }
+
+        ++m_externalDevicesFound;
     }
 
     void OneWireSubsystem::readDeviceScratchpadCommandStartState() {

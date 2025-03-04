@@ -6,6 +6,8 @@
 
 #include "kilight/hw/DS18B20Driver.h"
 
+#include "kilight/util/MathUtil.h"
+
 namespace kilight::hw {
     DS18B20Driver::DS18B20Driver(DS2485Driver* const driver) :
         OneWireDevice(driver) {
@@ -36,11 +38,18 @@ namespace kilight::hw {
     }
 
     bool DS18B20Driver::completeReadScratchpad() {
-        bool const result = driver()->completeOneWireReadBlock(&m_scratchpad);
-        if (result) {
+        if (!driver()->completeOneWireReadBlock(&m_scratchpad)) {
+            return false;
+        }
+        std::array<std::byte, sizeof(scratchpad_t) - sizeof(scratchpad_t::crc)> buffer {};
+        memcpy(buffer.begin(), &m_scratchpad, buffer.size());
+        if (uint8_t const calculatedCRC = util::MathUtil::crc8(std::span<std::byte const>{buffer});
+            calculatedCRC != m_scratchpad.crc) {
+            DEBUG("Temperature CRC mismatch (calc: {} / received: {}), retrying", calculatedCRC, m_scratchpad.crc);
+        } else {
             onTemperatureReady(currentTemperature());
         }
-        return result;
+        return true;
     }
 
     bool DS18B20Driver::startCopyScratchpadCommand() const {

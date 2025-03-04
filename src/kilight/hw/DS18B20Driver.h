@@ -9,12 +9,14 @@
 #include <cstdint>
 
 #include <mpf/util/macros.h>
+#include <mpf/core/Logging.h>
 
 #include "kilight/hw/OneWireDevice.h"
 #include "kilight/hw/TemperatureSensor.h"
 
 namespace kilight::hw {
     class DS18B20Driver final : public OneWireDevice, public TemperatureSensor {
+        LOGGER(DS18B20);
     public:
         static constexpr uint32_t ConversionTimeMs = 750;
 
@@ -85,11 +87,11 @@ namespace kilight::hw {
         struct PACKED scratchpad_t {
             int16_t temperature: 12 = 0;
             unsigned: 4;
-            int8_t tHRegister: 8 = 0;
-            int8_t tLRegister: 8 = 0;
+            int8_t tHRegister = 0;
+            int8_t tLRegister = 0;
             configuration_register_t config {};
             unsigned: 24;
-            uint8_t crc: 8 = 0;
+            uint8_t crc = 0;
         };
 
         template<Command commandToRun>

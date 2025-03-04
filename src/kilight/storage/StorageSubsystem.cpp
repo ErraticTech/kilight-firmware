@@ -109,6 +109,13 @@ namespace kilight::storage {
         __builtin_unreachable();
     }
 
+    void StorageSubsystem::saveAndReboot() {
+        m_saveCheckAlarm.cancel();
+        writePendingData();
+        rom_reboot(REBOOT2_FLAG_REBOOT_TYPE_NORMAL | REBOOT2_FLAG_NO_RETURN_ON_SUCCESS, 1, 0, 0);
+        __builtin_unreachable();
+    }
+
     void StorageSubsystem::writePendingData() {
         save_data_wrapper_t dataToWrite;
         m_criticalSection.enter();
