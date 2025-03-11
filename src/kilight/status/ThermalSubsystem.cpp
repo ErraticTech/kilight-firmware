@@ -13,6 +13,8 @@
 #include "kilight/hw/SystemPins.h"
 
 using kilight::protocol::SystemState;
+using kilight::protocol::OutputIdentifier;
+using kilight::protocol::OutputState;
 using kilight::hw::SystemPins;
 using kilight::hw::GPIOInterruptTrigger;
 using kilight::core::Alarm;
@@ -84,16 +86,6 @@ namespace kilight::status {
             checkOverheatState();
         }
         break;
-
-            #ifdef LMFW_HAVE_STS4X
-            case StartMeasureOnBoardTemperature: {
-                startMeasureDriverTemperatureState();
-            } break;
-
-            case CompleteMeasureOnBoardTemperature: {
-                completeMeasureDriverTemperatureState();
-            } break;
-            #endif
 
         default:
             break;
@@ -168,10 +160,10 @@ namespace kilight::status {
             bool const registered = m_oneWire->registerOnboardTemperatureUpdateCallback(
                 [this](int16_t const newTemperature) {
                     m_driverTemperature = newTemperature;
-                    m_wifi->updateStateData([this](SystemState& state) {
-                        state.mutable_temperatures().set_driver(m_driverTemperature);
+                    m_wifi->updateStateData([newTemperature](SystemState& state) {
+                        state.mutable_temperatures().set_driver(newTemperature);
                     });
-                    DEBUG("Driver temperature: {:.2f} C", static_cast<float>(m_driverTemperature) / 100);
+                    TRACE("Driver temperature: {:.2f} °C", static_cast<float>(m_driverTemperature) / 100);
                 });
             if (registered) {
                 m_driverCallbackRegistered = true;
@@ -183,10 +175,10 @@ namespace kilight::status {
             bool const registered = m_oneWire->registerPowerSupplyTemperatureUpdateCallback(
                 [this](int16_t const newTemperature) {
                     m_powerSupplyTemperature = newTemperature;
-                    m_wifi->updateStateData([this](SystemState& state) {
-                        state.mutable_temperatures().set_powerSupply(m_powerSupplyTemperature);
+                    m_wifi->updateStateData([newTemperature](SystemState& state) {
+                        state.mutable_temperatures().set_powerSupply(newTemperature);
                     });
-                    DEBUG("Power Supply temperature: {:.2f} C", static_cast<float>(m_powerSupplyTemperature) / 100);
+                    TRACE("Power Supply temperature: {:.2f} °C", static_cast<float>(m_powerSupplyTemperature) / 100);
                 });
             if (registered) {
                 m_powerSupplyCallbackRegistered = true;
@@ -194,7 +186,21 @@ namespace kilight::status {
             }
         }
 
-        // TODO: Optional light thermometer detection and callback
+        if (!m_outputACallbackRegistered) {
+            bool const registered = m_oneWire->registerOutputATemperatureUpdateCallback(
+                [this](int16_t const newTemperature) {
+                    m_outputATemperature = newTemperature;
+                    m_wifi->updateOutputStateData(OutputIdentifier::OutputA,
+                                                  [newTemperature](OutputState& state) {
+                                                      state.set_temperature(newTemperature);
+                                                  });
+                    TRACE("Output A temperature: {:.2f} °C", static_cast<float>(m_outputATemperature) / 100);
+                });
+            if (registered) {
+                m_outputACallbackRegistered = true;
+                DEBUG("Registered Output A thermometer callback");
+            }
+        }
 
         m_state = State::MeasureFan;
     }

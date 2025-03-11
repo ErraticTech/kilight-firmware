@@ -109,9 +109,13 @@ namespace kilight::status {
 
         int16_t volatile m_powerSupplyTemperature = INT16_MIN;
 
+        int16_t volatile m_outputATemperature = INT16_MIN;
+
         bool m_driverCallbackRegistered = false;
 
         bool m_powerSupplyCallbackRegistered = false;
+
+        bool m_outputACallbackRegistered = false;
 
         void preSleepState();
 
