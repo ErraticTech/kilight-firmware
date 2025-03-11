@@ -31,7 +31,7 @@ namespace kilight::status {
     }
 
     void ThermalSubsystem::setUp() {
-        SystemPins::FanPWM::writePerThou(m_fanOutputPerThou);
+        SystemPins::FanPWM::writePerThou(1000 - m_fanOutputPerThou);
         m_wifi->updateStateData([this](SystemState& state) {
             state.mutable_fan().set_rpm(m_fanRPM);
             state.mutable_fan().set_outputPerThou(m_fanOutputPerThou);
@@ -155,7 +155,7 @@ namespace kilight::status {
     void ThermalSubsystem::updateFanSpeedState() {
         calculateFanOutput();
 
-        SystemPins::FanPWM::writePerThou(m_fanOutputPerThou);
+        SystemPins::FanPWM::writePerThou(1000 - m_fanOutputPerThou);
         m_wifi->updateStateData([this](SystemState& state) {
             state.mutable_fan().set_outputPerThou(m_fanOutputPerThou);
         });
