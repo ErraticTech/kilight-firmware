@@ -69,6 +69,10 @@ namespace kilight::hw {
             scanForDevicesCompleteState();
             break;
 
+        case ProcessFoundDevices:
+            processFoundDevicesState();
+            break;
+
         case ReadOnboardDeviceScratchpadCommandStart:
             readOnboardDeviceScratchpadCommandStartState();
             break;
@@ -240,7 +244,6 @@ namespace kilight::hw {
     }
 
     void OneWireSubsystem::scanForDevicesStartState() {
-        // ReSharper disable once CppDFAConstantConditions
         bool const isFirstRun = m_deviceAddressesFound == 0;
         if (isFirstRun) {
             DEBUG("Starting OneWire bus search...");
@@ -266,35 +269,50 @@ namespace kilight::hw {
             wait(ScanForDevicesStart, ErrorRetryDelayUs);
             return;
         }
+
         onewire_address_t const foundAddress = result.address;
+        if (uint8_t const calculatedCrc = foundAddress.calculateCrc();
+            calculatedCrc != foundAddress.crc()) {
+            DEBUG("Address CRC mismatch - provided: {:02X} calculated: {:02X}", foundAddress.crc(), calculatedCrc);
+            m_deviceAddressesFound = 0;
+            wait(ScanForDevicesStart, ErrorRetryDelayUs);
+            return;
+        }
+
         m_foundDeviceAddresses[m_deviceAddressesFound] = foundAddress;
         ++m_deviceAddressesFound;
 
-
-        if (foundAddress.deviceFamily() == TMP1826Driver::DeviceFamilyCode) {
-            DEBUG("Found on-board OneWire device: {}", foundAddress);
-            m_onboardDevice.setAddress(foundAddress);
-        } else if (foundAddress.deviceFamily() == DS18B20Driver::DeviceFamilyCode) {
-            registerExternalOneWireDevice(foundAddress);
-        } else {
-            WARN("Found unexpected OneWire device: {}", foundAddress);
-        }
-
         if (result.isLastDevice || m_deviceAddressesFound >= m_foundDeviceAddresses.size()) {
-            DEBUG("Done finding devices");
-            if (m_onboardDevice.address()) {
-                m_state = ReadOnboardDeviceScratchpadCommandStart;
-                return;
-            }
-            if (m_deviceAddressesFound > 0) {
-                m_state = RequestTemperatureConversionStart;
-                return;
-            }
-            WARN("No temperature sensors found!");
-            m_state = Invalid;
+            m_state = ProcessFoundDevices;
             return;
         }
         m_state = ScanForDevicesStart;
+    }
+
+    void OneWireSubsystem::processFoundDevicesState() {
+        using enum State;
+        for (size_t iter = 0; iter < std::min(m_deviceAddressesFound,  m_foundDeviceAddresses.size()); ++iter) {
+            if (auto const curAddress = m_foundDeviceAddresses[iter];
+                curAddress.deviceFamily() == TMP1826Driver::DeviceFamilyCode) {
+                DEBUG("Found on-board OneWire device: {}", curAddress);
+                m_onboardDevice.setAddress(curAddress);
+            } else if (curAddress.deviceFamily() == DS18B20Driver::DeviceFamilyCode) {
+                registerExternalOneWireDevice(curAddress);
+            } else {
+                WARN("Found unexpected OneWire device: {}", curAddress);
+            }
+        }
+        DEBUG("Done finding devices");
+        if (m_onboardDevice.address()) {
+            m_state = ReadOnboardDeviceScratchpadCommandStart;
+            return;
+        }
+        if (m_deviceAddressesFound > 0) {
+            m_state = RequestTemperatureConversionStart;
+            return;
+        }
+        WARN("No temperature sensors found!");
+        m_state = Invalid;
     }
 
 

@@ -43,6 +43,11 @@ namespace kilight::hw {
         constexpr auto operator<=>(onewire_address_t const& other) const noexcept = default;
 
         [[nodiscard]]
+        uint64_t value() const {
+            return m_value;
+        }
+
+        [[nodiscard]]
         uint8_t deviceFamily() const {
             return static_cast<uint8_t>(m_value & 0xFF);
         }
@@ -56,6 +61,9 @@ namespace kilight::hw {
         uint8_t crc() const {
             return static_cast<uint8_t>(m_value >> 56);
         }
+
+        [[nodiscard]]
+        uint8_t calculateCrc() const;
 
     private:
         uint64_t volatile m_value : 64 = 0;

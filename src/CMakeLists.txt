@@ -58,6 +58,7 @@ add_executable(kilight-firmware
         kilight/status/CurrentMonitorSubsystem.h
         kilight/status/ThermalSubsystem.h
         kilight/status/ThermalSubsystem.cpp
+        kilight/hw/onewire_address.cpp
 )
 
 target_compile_options(kilight-firmware PRIVATE

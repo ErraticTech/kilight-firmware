@@ -39,6 +39,7 @@ namespace kilight::hw {
 
             ScanForDevicesStart,
             ScanForDevicesComplete,
+            ProcessFoundDevices,
 
             ReadOnboardDeviceScratchpadCommandStart,
             ReadOnboardDeviceScratchpadCommandComplete,
@@ -189,6 +190,8 @@ namespace kilight::hw {
         void scanForDevicesStartState();
 
         void scanForDevicesCompleteState();
+
+        void processFoundDevicesState();
 
         void readOnboardDeviceScratchpadCommandStartState();
 
